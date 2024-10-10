@@ -1,44 +1,23 @@
 const { Sequelize } = require('sequelize');
 
+// Configuración de la base de datos
 const sequelize = new Sequelize('chat_app', 'admin', 'rootfnl2024', {
-  host: 'localhost',
+  host: 'databasefnl-instance-1.ctkki2usirrr.us-east-2.rds.amazonaws.com', // Punto de enlace de RDS
   dialect: 'mysql',
+  port: 3306, // Puerto de la base de datos
 });
 
+// Función para probar la conexión
+const testConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Conexión a la base de datos establecida correctamente.');
+  } catch (error) {
+    console.error('No se pudo conectar a la base de datos:', error);
+  }
+};
+
+// Llamar a la función para probar la conexión
+testConnection();
+
 module.exports = sequelize;
-
-// =============================================================
-
-// const { Sequelize } = require('sequelize');
-// require('dotenv').config();  // Asegúrate de cargar las variables de entorno
-
-// const sequelize = new Sequelize(
-//   process.env.MYSQL_DATABASE,    // Nombre de la base de datos
-//   process.env.MYSQL_USER,        // Usuario de la base de datos
-//   process.env.MYSQL_PASSWORD,    // Contraseña de la base de datos
-//   {
-//     host: process.env.MYSQL_HOST, // Host de la base de datos
-//     dialect: 'mysql',            // Dialecto de la base de datos
-//     port: process.env.MYSQL_PORT  // Puerto de la base de datos
-//   }
-// );
-
-// module.exports = sequelize;
-
-// -------------------------------------------------------------
-
-// const { Sequelize } = require('sequelize');
-// require('dotenv').config();  // Asegúrate de cargar las variables de entorno
-
-// const sequelize = new Sequelize(
-//   'chat_app',    // Nombre de la base de datos
-//   'admin',        // Usuario de la base de datos
-//   'Dryan250303',    // Contraseña de la base de datos
-//   {
-//     host: 'database-1.ctkki2usirrr.us-east-2.rds.amazonaws.com', // Host de la base de datos
-//     dialect: 'mysql',            // Dialecto de la base de datos
-//     port: '3306'  // Puerto de la base de datos
-//   }
-// );
-
-// module.exports = sequelize;
