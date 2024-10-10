@@ -18,11 +18,10 @@ const tipoTecnicas = require('./routes/tipotecnicas');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración de CORS (opcional)
+// Configuración de CORS para permitir todos los orígenes sin credenciales
 const corsOptions = {
-  origin: 'http://localhost:61166', // Asegúrate de que esto sea el origen correcto de tu frontend
+  origin: '*', // Permite todos los orígenes
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true, // Permite encabezados de autenticación y cookies
   optionsSuccessStatus: 204
 };
 
