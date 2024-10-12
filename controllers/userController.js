@@ -1,7 +1,9 @@
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-
+const multer = require('multer');
+const path = require('path');
+const { UserResponses } = require('../models');
 async function login(req, res) {
   const { username, password } = req.body;
 
@@ -38,18 +40,31 @@ async function login(req, res) {
 }
 
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'imagenes/');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage });
+
 async function createUser(req, res) {
   const { username, password, email } = req.body;
+  const profileImage = req.file ? req.file.path : null;
 
   try {
-    // Encriptar la contraseña con bcrypt
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       username,
-      password: hashedPassword, // Guardar la contraseña encriptada
+      password: hashedPassword,
       email,
-      created_at: new Date()
+      profileImage,
+      created_at: new Date(),
     });
 
     res.status(200).json({ message: 'Usuario creado correctamente.', data: user });
@@ -58,6 +73,29 @@ async function createUser(req, res) {
     res.status(500).json({ error: 'Error interno del servidor.' });
   }
 }
+
+async function getUserProfile(req, res) {
+  try {
+    const userProfile = await UserResponses.findOne({
+      where: { user_id: req.params.id }, // ID del usuario
+      include: [
+        { model: require('../models/user'), attributes: ['email', 'profileImage'] },
+        { model: require('../models/responsabilityLevel'), attributes: ['level'] }
+      ]
+    });
+
+    if (!userProfile) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(userProfile);
+  } catch (error) {
+    console.error('Error al obtener el perfil de usuario:', error);
+    return res.status(500).json({ error: 'Error al obtener el perfil de usuario' });
+  }
+}
+
+
 
 async function getAllUsers(req, res) {
   try {
@@ -119,5 +157,6 @@ module.exports = {
   createUser,
   getAllUsers,
   updateUser,
-  getUserById
+  getUserById,
+  getUserProfile,
 };
