@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const User = require('./user'); // Importar el modelo User
-const ResponsabilityLevel = require('./responsabilityLevel');
+const HierarchicalLevel = require('./hierarchicalLevel');
 // Definir el modelo para la tabla user_responses
 const UserResponse = sequelize.define('UserResponse', {
   id: {
@@ -59,7 +59,7 @@ const UserResponse = sequelize.define('UserResponse', {
 });
 
 UserResponse.belongsTo(User, { foreignKey: 'user_id' });
-UserResponse.belongsTo(ResponsabilityLevel, { foreignKey: 'responsability_level_id' });
+UserResponse.belongsTo(HierarchicalLevel, { foreignKey: 'hierarchical_level_id' });
 
 // Exportar el modelo
 module.exports = UserResponse;

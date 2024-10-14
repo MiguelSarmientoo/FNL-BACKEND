@@ -80,7 +80,7 @@ async function getUserProfile(req, res) {
       where: { user_id: req.params.id }, // ID del usuario
       include: [
         { model: require('../models/user'), attributes: ['email', 'profileImage'] },
-        { model: require('../models/responsabilityLevel'), attributes: ['level'] }
+        { model: require('../models/hierarchicalLevel'), attributes: ['level'] }
       ]
     });
 
