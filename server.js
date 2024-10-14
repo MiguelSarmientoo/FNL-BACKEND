@@ -32,7 +32,6 @@ app.use('/api', usersRouter);
 app.use('/api', openaiRouter);
 app.use('/api', activityRouter);
 app.use('/api/v1/maintance', maintanceRouter);
-// Usa las rutas para user_responses
 app.use('/api', userResponseRoutes);
 app.use('/api', testEstresRoutes);
 app.use('/api', estresNiveles);
