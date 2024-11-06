@@ -1,5 +1,6 @@
 const { Sequelize } = require('sequelize');
 
+<<<<<<< HEAD
 // Configuración de la base de datos para localhost
 const sequelize = new Sequelize('chat_app', 'root', '', {
   host: 'localhost', // Cambiado a localhost
