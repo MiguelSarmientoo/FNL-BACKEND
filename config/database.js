@@ -1,8 +1,8 @@
 const { Sequelize } = require('sequelize');
 
-// Configuración de la base de datos
-const sequelize = new Sequelize('chat_app', 'admin', 'rootfnl2024', {
-  host: 'databasefnl-instance-1.ctkki2usirrr.us-east-2.rds.amazonaws.com', // Punto de enlace de RDS
+// Configuración de la base de datos para localhost
+const sequelize = new Sequelize('chat_app', 'root', '', {
+  host: 'localhost', // Cambiado a localhost
   dialect: 'mysql',
   port: 3306, // Puerto de la base de datos
 });

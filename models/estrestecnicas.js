@@ -16,7 +16,7 @@ const EstresTecnicas = sequelize.define('EstresTecnicas', {
     allowNull: true,  // Puede ser nulo si no hay mensaje
   },
   steps: {
-    type: DataTypes.TEXT,  // Campo de texto para almacenar los pasos
+    type: DataTypes.JSON,  // Campo de texto para almacenar los pasos
     allowNull: true,  // Los pasos pueden ser nulos
   },
   tipo: {
@@ -36,7 +36,17 @@ const EstresTecnicas = sequelize.define('EstresTecnicas', {
     },
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'  // Borra la técnica si se elimina el tipo de técnica
-  }
+  },
+  user_id: {  // Nuevo campo para el usuario
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
+  },
 }, {
   timestamps: false,  // Si no necesitas `createdAt` y `updatedAt`
   tableName: 'estrestecnicas',  // Nombre de la tabla en la base de datos

@@ -77,7 +77,7 @@ async function createUser(req, res) {
 async function getUserProfile(req, res) {
   try {
     const userProfile = await UserResponses.findOne({
-      where: { user_id: req.params.id }, // ID del usuario
+      where: { user_id: req.params.id },
       include: [
         { model: require('../models/user'), attributes: ['email', 'profileImage'] },
         { model: require('../models/hierarchicalLevel'), attributes: ['level'] }
@@ -88,13 +88,41 @@ async function getUserProfile(req, res) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.json(userProfile);
+    let profileImageBase64 = null;
+    if (userProfile.User.profileImage) {
+      const imageBuffer = userProfile.User.profileImage;
+      profileImageBase64 = imageBuffer.toString('base64');
+    }
+
+    const response = {
+      email: userProfile.User.email,
+      hierarchicalLevel: userProfile.HierarchicalLevel.level,
+      gender_id: userProfile.gender_id,
+      profileImage: profileImageBase64,
+    };
+
+    return res.json(response);
   } catch (error) {
     console.error('Error al obtener el perfil de usuario:', error);
     return res.status(500).json({ error: 'Error al obtener el perfil de usuario' });
   }
 }
 
+async function updateProfile(req, res) {
+  try {
+    if (req.file) {
+      const user = await User.findByPk(req.params.id);
+      user.profileImage = req.file.buffer;
+      await user.save();
+
+      return res.json({ message: 'Imagen de perfil actualizada exitosamente.' });
+    }
+    return res.status(400).json({ message: 'No se ha proporcionado ninguna imagen.' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Error al actualizar la imagen de perfil.' });
+  }
+}
 
 
 async function getAllUsers(req, res) {
@@ -159,4 +187,5 @@ module.exports = {
   updateUser,
   getUserById,
   getUserProfile,
+  updateProfile,
 };

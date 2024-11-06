@@ -112,8 +112,8 @@ const TestEstres = sequelize.define('TestEstres', {
     allowNull: true,
   },
 }, {
-  timestamps: false,  // Si no necesitas `createdAt` y `updatedAt`
-  tableName: 'test_estres',  // Nombre de la tabla en la base de datos
+  timestamps: false,  
+  tableName: 'test_estres', 
 });
 
 module.exports = TestEstres;

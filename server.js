@@ -14,6 +14,7 @@ const userEstresSession = require('./routes/userestressesion');
 const userPrograma = require('./routes/userprograma');
 const estresTecnicas = require('./routes/estrestecnicas');
 const tipoTecnicas = require('./routes/tipotecnicas');
+const testEstresSalidaRoutes = require('./routes/test_estres_salida'); // Importa el nuevo router de test estres salida
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,7 +40,7 @@ app.use('/api', userEstresSession);
 app.use('/api', userPrograma);
 app.use('/api', estresTecnicas);
 app.use('/api', tipoTecnicas);
-
+app.use('/api', testEstresSalidaRoutes); // Agrega el nuevo enrutador aquí
 
 // Sincroniza los modelos con la base de datos
 sequelize.sync({ force: false })  // Cambia force a true si quieres recrear las tablas en cada inicio
