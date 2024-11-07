@@ -8,7 +8,7 @@ const ResponsabilityLevel = sequelize.define('ResponsabilityLevel', {
   },
 }, {
   timestamps: false,
-  tableName: 'responsability_level', // Asegúrate de que este nombre coincida con el de la tabla en tu base de datos
+  tableName: 'responsability_level', 
 });
 
 module.exports = ResponsabilityLevel;

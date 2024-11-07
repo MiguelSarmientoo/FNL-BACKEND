@@ -1,11 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors'); 
+const path = require('path');
 const messagesRouter = require('./routes/messages');
 const usersRouter = require('./routes/user');
 const openaiRouter = require('./routes/openai');
-const activityRouter = require('./routes/activity'); // Importa el nuevo router de actividades
-const sequelize = require('./config/database'); // Importa la configuración de Sequelize
+const activityRouter = require('./routes/activity'); 
+const sequelize = require('./config/database');
 const maintanceRouter = require('./routes/maintance');
 const userResponseRoutes = require('./routes/userResponseRoutes');
 const testEstresRoutes = require('./routes/TestEstresRoutes');
@@ -14,20 +15,21 @@ const userEstresSession = require('./routes/userestressesion');
 const userPrograma = require('./routes/userprograma');
 const estresTecnicas = require('./routes/estrestecnicas');
 const tipoTecnicas = require('./routes/tipotecnicas');
-const testEstresSalidaRoutes = require('./routes/test_estres_salida'); // Importa el nuevo router de test estres salida
+const testEstresSalidaRoutes = require('./routes/test_estres_salida'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración de CORS para permitir todos los orígenes sin credenciales
 const corsOptions = {
-  origin: '*', // Permite todos los orígenes
+  origin: '*',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   optionsSuccessStatus: 204
 };
 
-app.use(cors(corsOptions)); // Usa las opciones de CORS
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
+
+// Configuración de rutas
 app.use('/api', messagesRouter);
 app.use('/api', usersRouter);
 app.use('/api', openaiRouter);
@@ -40,10 +42,13 @@ app.use('/api', userEstresSession);
 app.use('/api', userPrograma);
 app.use('/api', estresTecnicas);
 app.use('/api', tipoTecnicas);
-app.use('/api', testEstresSalidaRoutes); // Agrega el nuevo enrutador aquí
+app.use('/api', testEstresSalidaRoutes);
+
+// Configuración de ruta estática para archivos de imagen
+app.use('/imagenes', express.static(path.join(__dirname, 'imagenes')));
 
 // Sincroniza los modelos con la base de datos
-sequelize.sync({ force: false })  // Cambia force a true si quieres recrear las tablas en cada inicio
+sequelize.sync({ force: false })
   .then(() => {
     console.log('Base de datos sincronizada');
   })

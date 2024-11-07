@@ -16,7 +16,7 @@ const EstresTecnicas = sequelize.define('EstresTecnicas', {
     allowNull: true,  // Puede ser nulo si no hay mensaje
   },
   steps: {
-    type: DataTypes.JSON,  // Campo de texto para almacenar los pasos
+    type: DataTypes.TEXT,  // Campo de texto para almacenar los pasos
     allowNull: true,  // Los pasos pueden ser nulos
   },
   tipo: {
