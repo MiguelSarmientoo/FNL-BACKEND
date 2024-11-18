@@ -1,22 +1,8 @@
-// controllers/userController.js
-const { User } = require('../models');
+const { User, UserResponses } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const multer = require('multer');
 const path = require('path');
-const { UserResponses } = require('../models');
-
-// Configuración de multer para el almacenamiento de imágenes
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'imagenes/'); // Asegúrate de que esta carpeta exista
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}${ext}`);
-  },
-});
-const upload = multer({ storage });
+const fs = require('fs');
 
 // Login de usuario y generación de token
 async function login(req, res) {
@@ -35,12 +21,15 @@ async function login(req, res) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Generar el token JWT
-    const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.status(200).json({
       message: 'Login exitoso',
-      token: token,
+      token,
       userId: user.id,
       username: user.username,
       email: user.email,
@@ -52,19 +41,36 @@ async function login(req, res) {
   }
 }
 
-// Crear usuario
 async function createUser(req, res) {
   const { username, password, email } = req.body;
-  const profileImage = req.file ? req.file.path : null;
+  const file = req.file; // Ahora usamos req.file, ya que es un solo archivo
 
   try {
+    // Validaciones básicas
+    if (!username || !password || !email) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    // Manejo de la imagen
+    let profileImagePath = null;
+    if (file) {
+      const uploadDir = path.join(__dirname, '../imagenes');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const fileName = `${Date.now()}-${file.filename}`;
+      profileImagePath = `/imagenes/${file.filename}`;
+    }
+
+    // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Crear usuario
     const user = await User.create({
       username,
       password: hashedPassword,
       email,
-      profileImage, // Almacena la ruta de la imagen
+      profileImage: profileImagePath,
       created_at: new Date(),
     });
 
@@ -83,7 +89,7 @@ async function getUserProfile(req, res) {
       include: [
         { model: require('../models/user'), attributes: ['email', 'profileImage'] },
         { model: require('../models/hierarchicalLevel'), attributes: ['level'] },
-      ]
+      ],
     });
 
     if (!userProfile) {
@@ -94,34 +100,41 @@ async function getUserProfile(req, res) {
       email: userProfile.User.email,
       hierarchicalLevel: userProfile.HierarchicalLevel.level,
       gender_id: userProfile.gender_id,
-      profileImage: userProfile.User.profileImage,  // Debería ser la ruta de la imagen
+      profileImage: userProfile.User.profileImage,
     };
 
     return res.json(response);
   } catch (error) {
     console.error('Error al obtener el perfil de usuario:', error);
-    return res.status(500).json({ error: 'Error al obtener el perfil de usuario' });
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
 
-// Actualizar perfil de usuario (incluyendo la imagen de perfil)
 async function updateProfile(req, res) {
+  const { id } = req.params;
+  const { username, email } = req.body;
+
   try {
-    const user = await User.findByPk(req.params.id);
+    const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    if (username) user.username = username;
+    if (email) user.email = email;
+
+    // Verifica si hay una nueva imagen
     if (req.file) {
-      user.profileImage = req.file.path; // Guarda la ruta de la imagen
-      await user.save();
-      return res.json({ message: 'Imagen de perfil actualizada exitosamente.' });
+      const uploadDir = path.join(__dirname, '../imagenes');
+      const newProfileImagePath = `/imagenes/${req.file.filename}`; // Usar el nombre del archivo generado por multer
+      user.profileImage = newProfileImagePath; // Actualiza la ruta de la imagen en el modelo
     }
 
-    res.status(400).json({ message: 'No se ha proporcionado ninguna imagen.' });
+    await user.save();
+    res.status(200).json({ message: 'Perfil actualizado correctamente.', data: user });
   } catch (error) {
-    console.error('Error al actualizar el perfil de usuario:', error);
-    return res.status(500).json({ message: 'Error al actualizar la imagen de perfil.' });
+    console.error('Error al actualizar el perfil:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
   }
 }
 
@@ -150,7 +163,7 @@ async function updateUser(req, res) {
 
     if (username) user.username = username;
     if (email) user.email = email;
-    if (password) user.password = await bcrypt.hash(password, 10);  // Encriptar la nueva contraseña
+    if (password) user.password = await bcrypt.hash(password, 10); // Encriptar la nueva contraseña
     if (permisopoliticas !== undefined) user.permisopoliticas = permisopoliticas;
     if (funcyinteract !== undefined) user.funcyinteract = funcyinteract;
 
@@ -187,5 +200,4 @@ module.exports = {
   getUserById,
   getUserProfile,
   updateProfile,
-  upload // Exportamos upload para que las rutas puedan acceder a él
 };

@@ -1,3 +1,4 @@
+//models/test_estres.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 

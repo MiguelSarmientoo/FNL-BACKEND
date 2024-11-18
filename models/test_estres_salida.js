@@ -1,3 +1,4 @@
+//models/test_estres_salida.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 

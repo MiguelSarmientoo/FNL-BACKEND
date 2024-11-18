@@ -1,3 +1,4 @@
+//models/userprograma.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const EstresTecnicas = require('./estrestecnicas');  // Asegúrate de importar el modelo relacionado

@@ -1,3 +1,4 @@
+//models/estrestecnicas.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');  // Asegúrate de que el archivo database.js esté bien configurado
 

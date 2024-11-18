@@ -1,8 +1,8 @@
+//models/user_responses.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./user'); // Importar el modelo User
+const User = require('./user'); 
 const HierarchicalLevel = require('./hierarchicalLevel');
-// Definir el modelo para la tabla user_responses
 const UserResponse = sequelize.define('UserResponse', {
   id: {
     type: DataTypes.INTEGER,

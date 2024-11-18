@@ -1,3 +1,4 @@
+//models/message.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const User = require('./user'); // Asegúrate de importar el modelo User
