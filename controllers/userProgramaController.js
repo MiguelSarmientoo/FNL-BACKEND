@@ -95,604 +95,172 @@ exports.createAndGenerateReport = async (req, res) => {
   delete data['user_id'];
 
   try {
-    // 1. Obtener el registro de UserEstresSession
-    const estresSession = await UserEstresSession.findOne({
-      where: { user_id },
-      attributes: ['estres_nivel_id'] // Solo obtener estres_nivel_id
-    });
-
-    if (!estresSession) {
-      return res.status(404).json({ error: 'No se encontró la sesión de estrés para el usuario.' });
-    }
-
-    const estres_nivel_id = estresNivelMap[estresSession.estres_nivel_id] || 'Desconocido';
-
-    // 2. Obtener el registro de UserResponse
-    const userResponse = await UserResponse.findOne({
-      where: { user_id }
-    });
-
-    if (!userResponse) {
-      return res.status(404).json({ error: 'No se encontraron respuestas de usuario.' });
-    }
-
-    // Mapeo de los valores de UserResponse
-    const age_range = ageRangeMap[userResponse.age_range_id] || 'Desconocido';
-    const hierarchical_level = hierarchicalLevelMap[userResponse.hierarchical_level_id] || 'Desconocido';
-    const responsability_level = responsabilityLevelMap[userResponse.responsability_level_id] || 'Desconocido';
-    const gender = genderMap[userResponse.gender_id] || 'Desconocido';
-
-    // 3. Obtener los datos del usuario de la tabla Users
-    const user = await User.findOne({
-      where: { id: user_id },
-      attributes: ['username', 'email']
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'No se encontraron los datos del usuario.' });
-    }
-
-    // 4. Transformar el map de preguntas
-    const preguntasResueltas = Object.keys(data).map((pregunta, index) => {
-      const respuesta = respuestaMap[data[pregunta]];
-      return {
-        pregunta: preguntasDefiniciones[pregunta],
-        respuesta: respuesta || "No especificado"
-      };
-    });
-
-    // 5. Obtener todas las técnicas de la tabla EstresTecnicas
-    const tecnicas = await EstresTecnicas.findAll({
-      attributes: ['id', 'nombre', 'tipotecnicas_id']
-    });
-
-    // Mapeo de técnicas
-    const tecnicasFormatted = tecnicas.map(tecnica => {
-      const tipoDescripcion = tecnica.tipotecnicas_id === 1 ? 'Técnica de Relajación' :
-                              tecnica.tipotecnicas_id === 2 ? 'Reestructuración Cognitiva' :
-                              tecnica.tipotecnicas_id === 3 ? 'Técnica de PNL' : 'Desconocido';
-
-      return {
-        id: tecnica.id,
-        nombre: tecnica.nombre,
-        tipotecnicas_id: tecnica.tipotecnicas_id
-      };
-    });
-
-    // 6. Generar el reporte usando la integración con GPT
-    const prompt = `
-      Basado en los detalles del usuario y las técnicas proporcionadas, genera un plan de 21 días con las siguientes condiciones:
-      - Selecciona 7 técnicas de tipo 1 (Técnicas de Relajación), 7 de tipo 2 (Reestructuración Cognitiva) y 7 de tipo 3 (Técnicas de PNL) pero tienes que varias, osea de todas las opciones que tienes en cada tipo debes elegir la que mas le convenga al usuario por favor no me des siempre las mismas respuestas.
-      Datos del usuario:
-      - Nivel de estrés: ${estres_nivel_id}
-      - Rango de edad: ${age_range}
-      - Nivel jerárquico: ${hierarchical_level}
-      - Nivel de responsabilidad: ${responsability_level}
-      - Género: ${gender}
-      - Respuestas a las preguntas:
-      ${preguntasResueltas.map((p, index) => `Pregunta ${index + 1}: ${p.pregunta} - Respuesta: ${p.respuesta}`).join('\n')}
-      - Aquí están todas las técnicas disponibles para seleccionar (Tipo 1 = Técnica de Relajación, Tipo 2 = Reestructuración Cognitiva, Tipo 3 = Técnica de PNL):
-      ${tecnicasFormatted.map(t => `ID: ${t.id}, Nombre: ${t.nombre}, Tipo: ${t.tipotecnicas_id}`).join('\n')}
-
-      Una vez que tengas el plan para este usuario tu respuesta a este prompt solo sera el plan en este formato Json sin nada adicional solo un Json con el formato que te mostrare a continuación (Recuerda elegir las 7 tecnicas de cada tipo que mas le convengan a el usuario segun los datos proporcionados, los 7 primeros dias solo puedes elegir las tecnicas que mas les convegan al usuario pero tipo 1, las segunda semana las que mas que convengan al usuario pero tipo 2 y la tercera y ultima semana solo tecnicas de tipo 3 tambien las que mas le convengan al usuario. Recuerda que tendremos muchos usuario por lo tanto cada un tendra problemas diferentes de como se debe tratar por eso de estoy dando todos los datos del usuario:
-      (Por otro lado debo dejarte claro que debes elegir lo mejor para el usuario, no ve vas a pasar siempre por ejemplo numero conescutico de id de las tecnicas es no me sirve debes variar y darme lo mejor para el usuario en el orden conveniete que debe llevar las tecnicas que selecciones)
-      {
-        Id : (num de la tecnica, tipo int),
-        Dia: (el dia que se realizara esta tecnica de los 21 dias, tipo int),
-      },
-      asi sucesivamente hasta completar los 21 dias ...
-    `;
-
-    const gptResponse = await getBotResponse(prompt, user_id);
-    console.log('Respuesta completa de GPT:', gptResponse);
-
-    // 7. Extraer el JSON de la respuesta de GPT de manera flexible
-    let programaUsuario;
-    try {
-      // Buscar cualquier bloque de texto que parezca un JSON en la respuesta
-      const jsonStartIndex = gptResponse.indexOf('[');
-      const jsonEndIndex = gptResponse.lastIndexOf(']') + 1;
-
-      if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-        const jsonString = gptResponse.slice(jsonStartIndex, jsonEndIndex);
-        programaUsuario = JSON.parse(jsonString); // Parseamos el bloque JSON extraído
-      } else {
-        throw new Error("No se encontró un bloque JSON válido en la respuesta de GPT.");
-      }
-    } catch (error) {
-      console.error('Error al parsear la respuesta de GPT:', error);
-      return res.status(500).json({ error: 'Error al procesar la respuesta de GPT.' });
-    }
-
-    // Imprime el JSON extraído de la respuesta GPT para verificar
-    console.log('JSON extraído de la respuesta GPT:', JSON.stringify(programaUsuario, null, 2));
-
-    const startDate = moment.tz('America/Lima').format('YYYY-MM-DD HH:mm:ss');
-
-    const registros = programaUsuario.map(item => ({
-      user_id: user_id,
-      estrestecnicas_id: item.Id,  // ID del JSON
-      dia: item.Dia,  // Día del JSON
-      start_date: startDate 
-    }));
-
-    // Imprime los registros que serán insertados
-    console.log('Registros a insertar en UserPrograma:', JSON.stringify(registros, null, 2));
-
-    try {
-      await UserPrograma.bulkCreate(registros);
-      console.log('Registros insertados correctamente en la tabla UserPrograma');
-    } catch (error) {
-      console.error('Error al insertar los registros en UserPrograma:', error);
-    }
-
-    res.status(200).json({
-      message: 'Reporte y programa generados correctamente, y registros insertados en UserPrograma.',
-      programaUsuario
-    });
-
-
-  } catch (error) {
-    console.error('Error al generar el reporte del usuario:', error);
-    res.status(500).json({ error: 'Error interno del servidor.' });
-  }
-};
-
-/*
-// Crear un programa de usuario y generar reporte GPT
-exports.createAndGenerateReport = async (req, res) => {
-  const { user_id } = req.params; // Obtener el user_id de los parámetros de la URL
-  let data = req.body; // Obtener el map pasado en el cuerpo de la solicitud
-
-  // Eliminar 'estado' y 'user_id' del map
-  delete data['estado'];
-  delete data['user_id'];
-
-  try {
-    // 1. Obtener el registro de UserEstresSession
-    const estresSession = await UserEstresSession.findOne({
-      where: { user_id },
-      attributes: ['estres_nivel_id'] // Solo obtener estres_nivel_id
-    });
-
-    if (!estresSession) {
-      return res.status(404).json({ error: 'No se encontró la sesión de estrés para el usuario.' });
-    }
-
-    const estres_nivel_id = estresNivelMap[estresSession.estres_nivel_id] || 'Desconocido';
-
-    // 2. Obtener el registro de UserResponse
-    const userResponse = await UserResponse.findOne({
-      where: { user_id }
-    });
-
-    if (!userResponse) {
-      return res.status(404).json({ error: 'No se encontraron respuestas de usuario.' });
-    }
-
-    // Mapeo de los valores de UserResponse
-    const age_range = ageRangeMap[userResponse.age_range_id] || 'Desconocido';
-    const hierarchical_level = hierarchicalLevelMap[userResponse.hierarchical_level_id] || 'Desconocido';
-    const responsability_level = responsabilityLevelMap[userResponse.responsability_level_id] || 'Desconocido';
-    const gender = genderMap[userResponse.gender_id] || 'Desconocido';
-
-    // 3. Obtener los datos del usuario de la tabla Users
-    const user = await User.findOne({
-      where: { id: user_id },
-      attributes: ['username', 'email']
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'No se encontraron los datos del usuario.' });
-    }
-
-    // 4. Transformar el map de preguntas
-    const preguntasResueltas = Object.keys(data).map((pregunta, index) => {
-      const respuesta = respuestaMap[data[pregunta]];
-      return {
-        pregunta: preguntasDefiniciones[pregunta],
-        respuesta: respuesta || "No especificado"
-      };
-    });
-
-    // 5. Generar técnicas de estrés personalizadas
-    const techniquesResponse = await generadorEstresTecnicas(req);
-    if (!techniquesResponse || techniquesResponse.error || !Array.isArray(techniquesResponse.data)) {
-      console.error('Error al generar técnicas de estrés:', techniquesResponse?.error);
-      return res.status(500).json({ error: 'Error al generar técnicas de estrés.' });
-    }
-
-    // 6. Obtener todas las técnicas generadas
-    const tecnicasGeneradas = techniquesResponse.data;
-
-    // Verifica si no hay técnicas generadas
-    if (!tecnicasGeneradas || tecnicasGeneradas.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron técnicas de estrés generadas.' });
-    }
-
-    // 7. Definir tecnicasFormatted
-    const tecnicasFormatted = tecnicasGeneradas.map(tecnica => ({
-      id: tecnica.id,
-      nombre: tecnica.nombre,
-      tipoDescripcion: tecnica.tipotecnicas_id === 1 ? 'Técnica de Relajación' :
-                       tecnica.tipotecnicas_id === 2 ? 'Reestructuración Cognitiva' :
-                       tecnica.tipotecnicas_id === 3 ? 'Técnica de PNL' : 'Desconocido'
-    }));
-
-    // 8. Generar el reporte usando la integración con GPT
-    const prompt = `
-      Basado en los detalles del usuario y las técnicas proporcionadas, genera un plan de 21 días con las siguientes condiciones:
-      - Selecciona 7 técnicas de tipo 1 (Técnicas de Relajación), 7 de tipo 2 (Reestructuración Cognitiva) y 7 de tipo 3 (Técnicas de PNL) pero tienes que varias, osea de todas las opciones que tienes en cada tipo debes elegir la que mas le convenga al usuario por favor no me des siempre las mismas respuestas.
-      Datos del usuario:
-      - Nivel de estrés: ${estres_nivel_id}
-      - Rango de edad: ${age_range}
-      - Nivel jerárquico: ${hierarchical_level}
-      - Nivel de responsabilidad: ${responsability_level}
-      - Género: ${gender}
-      - Respuestas a las preguntas:
-      ${preguntasResueltas.map((p, index) => `Pregunta ${index + 1}: ${p.pregunta} - Respuesta: ${p.respuesta}`).join('\n')}
-      - Aquí están todas las técnicas disponibles para seleccionar (Tipo 1 = Técnica de Relajación, Tipo 2 = Reestructuración Cognitiva, Tipo 3 = Técnica de PNL):
-      ${tecnicasFormatted.map(t => `ID: ${t.id}, Nombre: ${t.nombre}, Tipo: ${t.tipotecnicas_id}`).join('\n')}
-
-      Una vez que tengas el plan para este usuario tu respuesta a este prompt solo sera el plan en este formato Json sin nada adicional solo un Json con el formato que te mostrare a continuación (Recuerda elegir las 7 tecnicas de cada tipo que mas le convengan a el usuario segun los datos proporcionados, los 7 primeros dias solo puedes elegir las tecnicas que mas les convegan al usuario pero tipo 1, las segunda semana las que mas que convengan al usuario pero tipo 2 y la tercera y ultima semana solo tecnicas de tipo 3 tambien las que mas le convengan al usuario. Recuerda que tendremos muchos usuario por lo tanto cada un tendra problemas diferentes de como se debe tratar por eso de estoy dando todos los datos del usuario:
-      (Por otro lado debo dejarte claro que debes elegir lo mejor para el usuario, no ve vas a pasar siempre por ejemplo numero conescutico de id de las tecnicas es no me sirve debes variar y darme lo mejor para el usuario en el orden conveniete que debe llevar las tecnicas que selecciones)
-      {
-        Id : (num de la tecnica, tipo int),
-        Dia: (el dia que se realizara esta tecnica de los 21 dias, tipo int),
-      },
-      asi sucesivamente hasta completar los 21 dias ...
-    `;
-    const gptResponse = await getBotResponse(prompt, user_id);
-    console.log('Respuesta completa de GPT:', gptResponse);
-
-    // 9. Extraer el JSON de la respuesta de GPT de manera flexible
-    let programaUsuario;
-    try {
-      const jsonStartIndex = gptResponse.indexOf('[');
-      const jsonEndIndex = gptResponse.lastIndexOf(']') + 1;
-
-      if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-        const jsonString = gptResponse.slice(jsonStartIndex, jsonEndIndex);
-        programaUsuario = JSON.parse(jsonString); // Parseamos el bloque JSON extraído
-      } else {
-        throw new Error("No se encontró un bloque JSON válido en la respuesta de GPT.");
-      }
-    } catch (error) {
-      console.error('Error al parsear la respuesta de GPT:', error);
-      return res.status(500).json({ error: 'Error al procesar la respuesta de GPT.' });
-    }
-
-    // Imprime el JSON extraído de la respuesta GPT para verificar
-    console.log('JSON extraído de la respuesta GPT:', JSON.stringify(programaUsuario, null, 2));
-
-    const startDate = moment.tz('America/Lima').format('YYYY-MM-DD HH:mm:ss');
-
-    const registros = programaUsuario.map(item => ({
-      user_id: user_id,
-      estrestecnicas_id: item.Id,  // ID del JSON
-      dia: item.Dia,  // Día del JSON
-      start_date: startDate 
-    }));
-
-    // Imprime los registros que serán insertados
-    console.log('Registros a insertar en UserPrograma:', JSON.stringify(registros, null, 2));
-
-    // Insertar registros en UserPrograma
-    await UserPrograma.bulkCreate(registros);
-    console.log('Registros insertados correctamente en la tabla UserPrograma');
-
-    // Respuesta final
-    return res.status(200).json({
-      message: 'Reporte y programa generados correctamente, y registros insertados en UserPrograma.',
-      programaUsuario
-    });
-
-  } catch (error) {
-    console.error('Error al generar el reporte del usuario:', error);
-    // Asegúrate de que solo se envíe una respuesta en caso de error
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'Error interno del servidor.' });
-    }
-  }
-};
-
-exports.createAndGenerateReport = async (req, res) => {
-  const { user_id } = req.params; // Obtener el user_id de los parámetros de la URL
-  let data = req.body; // Obtener el map pasado en el cuerpo de la solicitud
-
-  // Eliminar 'estado' y 'user_id' del map
-  delete data['estado'];
-  delete data['user_id'];
-
-  try {
-    // 1. Obtener el registro de UserEstresSession
-    const estresSession = await UserEstresSession.findOne({
-      where: { user_id },
-      attributes: ['estres_nivel_id'] // Solo obtener estres_nivel_id
-    });
-
-    if (!estresSession) {
-      return res.status(404).json({ error: 'No se encontró la sesión de estrés para el usuario.' });
-    }
-
-    const estres_nivel_id = estresNivelMap[estresSession.estres_nivel_id] || 'Desconocido';
-
-    // 2. Obtener el registro de UserResponse
-    const userResponse = await UserResponse.findOne({
-      where: { user_id }
-    });
-
-    if (!userResponse) {
-      return res.status(404).json({ error: 'No se encontraron respuestas de usuario.' });
-    }
-
-    // Mapeo de los valores de UserResponse
-    const age_range = ageRangeMap[userResponse.age_range_id] || 'Desconocido';
-    const hierarchical_level = hierarchicalLevelMap[userResponse.hierarchical_level_id] || 'Desconocido';
-    const responsability_level = responsabilityLevelMap[userResponse.responsability_level_id] || 'Desconocido';
-    const gender = genderMap[userResponse.gender_id] || 'Desconocido';
-
-    // 3. Obtener los datos del usuario de la tabla Users
-    const user = await User.findOne({
-      where: { id: user_id },
-      attributes: ['username', 'email']
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'No se encontraron los datos del usuario.' });
-    }
-
-    // 4. Transformar el map de preguntas
-    const preguntasResueltas = Object.keys(data).map((pregunta, index) => {
-      const respuesta = respuestaMap[data[pregunta]];
-      return {
-        pregunta: preguntasDefiniciones[pregunta],
-        respuesta: respuesta || "No especificado"
-      };
-    });
-
-    const techniquesResponse = await generadorEstresTecnicas(req, res);
-    if (!techniquesResponse || techniquesResponse.error || !Array.isArray(techniquesResponse.data)) {
-      console.error('Error al generar técnicas de estrés:', techniquesResponse?.error);
-      return res.status(500).json({ error: 'Error al generar técnicas de estrés.' });
-    }
-    
-    // 6. Obtener todas las técnicas generadas
-    const tecnicasGeneradas = techniquesResponse.data;
-    
-    // Verifica si no hay técnicas generadas
-    if (!tecnicasGeneradas || tecnicasGeneradas.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron técnicas de estrés generadas.' });
-    }
-    // 7. Definir tecnicasFormatted
-    const tecnicasFormatted = tecnicasGeneradas.map(tecnica => ({
-      id: tecnica.id,
-      nombre: tecnica.nombre,
-      tipoDescripcion: tecnica.tipotecnicas_id === 1 ? 'Técnica de Relajación' :
-                       tecnica.tipotecnicas_id === 2 ? 'Reestructuración Cognitiva' :
-                       tecnica.tipotecnicas_id === 3 ? 'Técnica de PNL' : 'Desconocido'
-    }));
-
-    // 6. Generar el reporte usando la integración con GPT
-    const prompt = `
-      Basado en los detalles del usuario y las técnicas proporcionadas, genera un plan de 21 días con las siguientes condiciones:
-      - Selecciona 7 técnicas de tipo 1 (Técnicas de Relajación), 7 de tipo 2 (Reestructuración Cognitiva) y 7 de tipo 3 (Técnicas de PNL) pero tienes que varias, osea de todas las opciones que tienes en cada tipo debes elegir la que mas le convenga al usuario por favor no me des siempre las mismas respuestas.
-      Datos del usuario:
-      - Nivel de estrés: ${estres_nivel_id}
-      - Rango de edad: ${age_range}
-      - Nivel jerárquico: ${hierarchical_level}
-      - Nivel de responsabilidad: ${responsability_level}
-      - Género: ${gender}
-      - Respuestas a las preguntas:
-      ${preguntasResueltas.map((p, index) => `Pregunta ${index + 1}: ${p.pregunta} - Respuesta: ${p.respuesta}`).join('\n')}
-      - Aquí están todas las técnicas disponibles para seleccionar (Tipo 1 = Técnica de Relajación, Tipo 2 = Reestructuración Cognitiva, Tipo 3 = Técnica de PNL):
-      ${tecnicasFormatted.map(t => `ID: ${t.id}, Nombre: ${t.nombre}, Tipo: ${t.tipotecnicas_id}`).join('\n')}
-
-      Una vez que tengas el plan para este usuario tu respuesta a este prompt solo sera el plan en este formato Json sin nada adicional solo un Json con el formato que te mostrare a continuación (Recuerda elegir las 7 tecnicas de cada tipo que mas le convengan a el usuario segun los datos proporcionados, los 7 primeros dias solo puedes elegir las tecnicas que mas les convegan al usuario pero tipo 1, las segunda semana las que mas que convengan al usuario pero tipo 2 y la tercera y ultima semana solo tecnicas de tipo 3 tambien las que mas le convengan al usuario. Recuerda que tendremos muchos usuario por lo tanto cada un tendra problemas diferentes de como se debe tratar por eso de estoy dando todos los datos del usuario:
-      (Por otro lado debo dejarte claro que debes elegir lo mejor para el usuario, no ve vas a pasar siempre por ejemplo numero conescutico de id de las tecnicas es no me sirve debes variar y darme lo mejor para el usuario en el orden conveniete que debe llevar las tecnicas que selecciones)
-      {
-        Id : (num de la tecnica, tipo int),
-        Dia: (el dia que se realizara esta tecnica de los 21 dias, tipo int),
-      },
-      asi sucesivamente hasta completar los 21 dias ...
-    `;
-
-    const gptResponse = await getBotResponse(prompt, user_id);
-    console.log('Respuesta completa de GPT:', gptResponse);
-
-    // 7. Extraer el JSON de la respuesta de GPT de manera flexible
-    let programaUsuario;
-    try {
-      // Buscar cualquier bloque de texto que parezca un JSON en la respuesta
-      const jsonStartIndex = gptResponse.indexOf('[');
-      const jsonEndIndex = gptResponse.lastIndexOf(']') + 1;
-
-      if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-        const jsonString = gptResponse.slice(jsonStartIndex, jsonEndIndex);
-        programaUsuario = JSON.parse(jsonString); // Parseamos el bloque JSON extraído
-      } else {
-        throw new Error("No se encontró un bloque JSON válido en la respuesta de GPT.");
-      }
-    } catch (error) {
-      console.error('Error al parsear la respuesta de GPT:', error);
-      return res.status(500).json({ error: 'Error al procesar la respuesta de GPT.' });
-    }
-
-    // Imprime el JSON extraído de la respuesta GPT para verificar
-    console.log('JSON extraído de la respuesta GPT:', JSON.stringify(programaUsuario, null, 2));
-
-    const startDate = moment.tz('America/Lima').format('YYYY-MM-DD HH:mm:ss');
-
-    const registros = programaUsuario.map(item => ({
-      user_id: user_id,
-      estrestecnicas_id: item.Id,  // ID del JSON
-      dia: item.Dia,  // Día del JSON
-      start_date: startDate 
-    }));
-
-    // Imprime los registros que serán insertados
-    console.log('Registros a insertar en UserPrograma:', JSON.stringify(registros, null, 2));
-
-    try {
-      await UserPrograma.bulkCreate(registros);
-      console.log('Registros insertados correctamente en la tabla UserPrograma');
-    } catch (error) {
-      console.error('Error al insertar los registros en UserPrograma:', error);
-    }
-
-    res.status(200).json({
-      message: 'Reporte y programa generados correctamente, y registros insertados en UserPrograma.',
-      programaUsuario
-    });
-
-
-  } catch (error) {
-    console.error('Error al generar el reporte del usuario:', error);
-    res.status(500).json({ error: 'Error interno del servidor.' });
-  }
-};
-
-
-exports.createAndGenerateReport = async (req, res) => {
-  const { user_id } = req.params;
-  let data = req.body;
-
-  // Eliminar 'estado' y 'user_id' del map
-  delete data['estado'];
-  delete data['user_id'];
-
-  try {
-    // 1. Obtener el registro de UserEstresSession
-    const estresSession = await UserEstresSession.findOne({
-      where: { user_id },
-      attributes: ['estres_nivel_id']
-    });
-
-    if (!estresSession) {
-      return res.status(404).json({ error: 'No se encontró la sesión de estrés para el usuario.' });
-    }
-
-    const estres_nivel_id = estresNivelMap[estresSession.estres_nivel_id] || 'Desconocido';
-
-    // 2. Obtener el registro de UserResponse
+    // Obtener datos del usuario, nivel de estrés y respuestas
+    const estresSession = await UserEstresSession.findOne({ where: { user_id }, attributes: ['estres_nivel_id'] });
     const userResponse = await UserResponse.findOne({ where: { user_id } });
-    if (!userResponse) {
-      return res.status(404).json({ error: 'No se encontraron respuestas de usuario.' });
+    const user = await User.findOne({ where: { id: user_id }, attributes: ['username', 'email'] });
+
+    if (!estresSession || !userResponse || !user) {
+      return res.status(404).json({ error: 'No se encontraron los datos requeridos del usuario.' });
     }
 
-    // Mapeo de los valores de UserResponse
+    const estres_nivel = estresNivelMap[estresSession.estres_nivel_id] || 'Desconocido';
     const age_range = ageRangeMap[userResponse.age_range_id] || 'Desconocido';
     const hierarchical_level = hierarchicalLevelMap[userResponse.hierarchical_level_id] || 'Desconocido';
     const responsability_level = responsabilityLevelMap[userResponse.responsability_level_id] || 'Desconocido';
     const gender = genderMap[userResponse.gender_id] || 'Desconocido';
 
-    // 3. Obtener los datos del usuario
-    const user = await User.findOne({
-      where: { id: user_id },
-      attributes: ['username', 'email']
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'No se encontraron los datos del usuario.' });
-    }
-
-    // 4. Transformar el map de preguntas
-    const preguntasResueltas = Object.keys(data).map((pregunta, index) => {
-      const respuesta = respuestaMap[data[pregunta]];
-      return {
-        pregunta: preguntasDefiniciones[pregunta],
-        respuesta: respuesta || "No especificado"
-      };
-    });
-
-    // 5. Generar técnicas de estrés personalizadas
-    const techniquesResponse = await generadorEstresTecnicas(req, res);
-    if (!techniquesResponse || techniquesResponse.error) {
-      return res.status(500).json({ error: 'Error al generar técnicas de estrés.' });
-    }
-
-    // 6. Obtener todas las técnicas generadas
-    const tecnicasGeneradas = techniquesResponse.data;
-
-    // 7. Definir tecnicasFormatted
-    const tecnicasFormatted = tecnicasGeneradas.map(tecnica => ({
-      id: tecnica.id,
-      nombre: tecnica.nombre,
-      tipotecnicas_id: tecnica.tipotecnicas_id
+    // Respuestas del usuario al test de estrés
+    const preguntasResueltas = Object.keys(data).map((pregunta, index) => ({
+      pregunta: preguntasDefiniciones[pregunta],
+      respuesta: respuestaMap[data[pregunta]] || "No especificado"
     }));
 
-    // 8. Generar el reporte usando la integración con GPT
-    const prompt = `
-    Basado en los detalles del usuario y las técnicas proporcionadas, genera un plan de 21 días con las siguientes condiciones:
-    - Selecciona 7 técnicas de tipo 1 (Técnicas de Relajación), 7 de tipo 2 (Reestructuración Cognitiva) y 7 de tipo 3 (Técnicas de PNL) pero tienes que varias, osea de todas las opciones que tienes en cada tipo debes elegir la que mas le convenga al usuario por favor no me des siempre las mismas respuestas.
-    Datos del usuario:
-    - Nivel de estrés: ${estres_nivel_id}
-    - Rango de edad: ${age_range}
-    - Nivel jerárquico: ${hierarchical_level}
-    - Nivel de responsabilidad: ${responsability_level}
-    - Género: ${gender}
-    - Respuestas a las preguntas:
-    ${preguntasResueltas.map((p, index) => `Pregunta ${index + 1}: ${p.pregunta} - Respuesta: ${p.respuesta}`).join('\n')}
-    - Aquí están todas las técnicas disponibles para seleccionar (Tipo 1 = Técnica de Relajación, Tipo 2 = Reestructuración Cognitiva, Tipo 3 = Técnica de PNL):
-    ${tecnicasFormatted.map(t => `ID: ${t.id}, Nombre: ${t.nombre}, Tipo: ${t.tipotecnicas_id}`).join('\n')}
+    // Generar un resumen de las respuestas del usuario para incluir en el prompt
+    const resumenRespuestas = preguntasResueltas.map((p, index) => {
+      return `Pregunta ${index + 1}: ${p.pregunta} - Respuesta: ${p.respuesta}`;
+    }).join('\n');
 
-    Una vez que tengas el plan para este usuario tu respuesta a este prompt solo sera el plan en este formato Json sin nada adicional solo un Json con el formato que te mostrare a continuación (Recuerda elegir las 7 tecnicas de cada tipo que mas le convengan a el usuario segun los datos proporcionados, los 7 primeros dias solo puedes elegir las tecnicas que mas les convegan al usuario pero tipo 1, las segunda semana las que mas que convengan al usuario pero tipo 2 y la tercera y ultima semana solo tecnicas de tipo 3 tambien las que mas le convengan al usuario. Recuerda que tendremos muchos usuario por lo tanto cada un tendra problemas diferentes de como se debe tratar por eso de estoy dando todos los datos del usuario:
-    (Por otro lado debo dejarte claro que debes elegir lo mejor para el usuario, no ve vas a pasar siempre por ejemplo numero conescutico de id de las tecnicas es no me sirve debes variar y darme lo mejor para el usuario en el orden conveniete que debe llevar las tecnicas que selecciones)
-    {
-      Id : (num de la tecnica, tipo int),
-      Dia: (el dia que se realizara esta tecnica de los 21 dias, tipo int),
-    },
-    asi sucesivamente hasta completar los 21 dias ...
-  `;
+    // Dividir prompts en tres partes
+    const prompts = [
+      {
+        seccion: 'Días 1-7',
+        tipo: 'Técnicas de relajación',
+        prompt: `
+          Genera un programa personalizado para los días 1 a 7 (Técnicas de Relajación).
+          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Responde en formato JSON estrictamente válido:
+          [
+            {
+              "día": (número del día, tipo int),
+              "nombre_técnica": "Nombre de la técnica",
+              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
+              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+            }
+          ]
+          **Datos del usuario:**
+          - Nombre: ${user.username}
+          - Edad: ${age_range}
+          - Nivel jerárquico: ${hierarchical_level}
+          - Nivel de responsabilidad: ${responsability_level}
+          - Género: ${gender}
+          - Nivel de estrés: ${estres_nivel}
 
-    const gptResponse = await getBotResponse(prompt, user_id);
-    console.log('Respuesta completa de GPT:', gptResponse);
+          **Respuestas al test de estrés:**
+          ${resumenRespuestas}
 
-    // 9. Extraer el JSON de la respuesta de GPT
-    let programaUsuario;
-    try {
-      const jsonStartIndex = gptResponse.indexOf('[');
-      const jsonEndIndex = gptResponse.lastIndexOf(']') + 1;
+          **Nota:** Solo responde con el JSON válido.
+        `
+      },
+      {
+        seccion: 'Días 8-14',
+        tipo: 'Reestructuración cognitiva',
+        prompt: `
+          Genera un programa personalizado para los días 8 a 14 (Reestructuración Cognitiva). 
+          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Responde en formato JSON estrictamente válido:
+          [
+            {
+              "día": (número del día, tipo int),
+              "nombre_técnica": "Nombre de la técnica",
+              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
+              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+            }
+          ]
+          **Datos del usuario:**
+          - Nombre: ${user.username}
+          - Edad: ${age_range}
+          - Nivel jerárquico: ${hierarchical_level}
+          - Nivel de responsabilidad: ${responsability_level}
+          - Género: ${gender}
+          - Nivel de estrés: ${estres_nivel}
 
-      if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
-        const jsonString = gptResponse.slice(jsonStartIndex, jsonEndIndex);
-        programaUsuario = JSON.parse(jsonString);
-      } else {
-        throw new Error("No se encontró un bloque JSON válido en la respuesta de GPT.");
+          **Respuestas al test de estrés:**
+          ${resumenRespuestas}
+
+          **Nota:** Solo responde con el JSON válido.
+        `
+      },
+      {
+        seccion: 'Días 15-21',
+        tipo: 'Técnicas de PNL',
+        prompt: `
+          Genera un programa personalizado para los días 15 a 21 (Técnicas de PNL). 
+          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Responde en formato JSON estrictamente válido:
+          [
+            {
+              "día": (número del día, tipo int),
+              "nombre_técnica": "Nombre de la técnica",
+              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
+              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+            }
+          ]
+          **Datos del usuario:**
+          - Nombre: ${user.username}
+          - Edad: ${age_range}
+          - Nivel jerárquico: ${hierarchical_level}
+          - Nivel de responsabilidad: ${responsability_level}
+          - Género: ${gender}
+          - Nivel de estrés: ${estres_nivel}
+
+          **Respuestas al test de estrés:**
+          ${resumenRespuestas}
+
+          **Nota:** Solo responde con el JSON válido.
+        `
       }
-    } catch (error) {
-      console.error('Error al parsear la respuesta de GPT:', error);
-      return res.status(500).json({ error: 'Error al procesar la respuesta de GPT.' });
+    ];
+
+    // Generar respuestas de GPT para cada sección
+    const programas = [];
+    for (const { seccion, prompt } of prompts) {
+      const gptResponse = await getBotResponse(prompt, user_id);
+      console.log(`Respuesta de GPT para ${seccion}:`, gptResponse);
+
+      // Validar y parsear JSON
+      try {
+        programas.push(...JSON.parse(gptResponse));
+      } catch (error) {
+        console.error(`Error al parsear JSON para ${seccion}:`, error);
+        return res.status(500).json({ error: `Error al procesar JSON para ${seccion}` });
+      }
     }
 
-    const startDate = moment.tz('America/Lima').format('YYYY-MM-DD HH:mm:ss');
-    const registros = programaUsuario.map(item => ({
+    // Preparar los registros para insertar en la base de datos
+    const startDate = new Date(); // Fecha actual
+    const registros = programas.map(item => ({
       user_id: user_id,
-      estrestecnicas_id: item.Id,
-      dia: item.Dia,
-      start_date: startDate 
+      dia: item.día,
+      nombre_tecnica: item.nombre_técnica,
+      tipo_tecnica: item.tipo_técnica,
+      descripcion: item.descripción,
+      guia: JSON.stringify(item.guía),
+      start_date: startDate,
+      comentario: item.comentario || null,
+      estrellas: item.estrellas || 3
     }));
 
-    console.log('Registros a insertar en UserPrograma:', JSON.stringify(registros, null, 2));
-
+    // Insertar registros en la base de datos
     await UserPrograma.bulkCreate(registros);
     console.log('Registros insertados correctamente en la tabla UserPrograma');
 
     res.status(200).json({
-      message: 'Reporte y programa generados correctamente, y registros insertados en UserPrograma.',
-      programaUsuario
+      message: 'Programa generado correctamente.',
+      programas
     });
 
   } catch (error) {
-    console.error('Error al generar el reporte del usuario:', error);
-    // Asegurarse de no enviar múltiples respuestas
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'Error interno del servidor.' });
-    }
+    console.error('Error al generar el programa del usuario:', error);
+    res.status(500).json({ error: 'Error interno del servidor.' });
   }
 };
-*/
-// Obtener todos los registros de UserPrograma filtrados por user_id junto con los detalles de EstresTecnicas
+
+
+
 exports.getByUserId = async (req, res) => {
   const { user_id } = req.params;  // Obtener el user_id de los parámetros
   try {
@@ -718,7 +286,7 @@ exports.getByUserId = async (req, res) => {
 
 // Actualizar un registro de UserPrograma por user_id y estrestecnicas_id
 exports.updateByUserAndTecnica = async (req, res) => {
-  const { user_id, estrestecnicas_id } = req.params; // Obtener user_id y estrestecnicas_id de los parámetros
+  const { user_id, id } = req.params; // Obtener user_id y estrestecnicas_id de los parámetros
   const { comentario, estrellas } = req.body; // Obtener los campos que se quieren actualizar del body
 
   try {
@@ -726,7 +294,7 @@ exports.updateByUserAndTecnica = async (req, res) => {
     const userPrograma = await UserPrograma.findOne({
       where: {
         user_id,
-        estrestecnicas_id
+        id
       }
     });
 
@@ -754,28 +322,28 @@ exports.updateByUserAndTecnica = async (req, res) => {
 
 // Obtener todos los registros de UserPrograma filtrados por user_id y ordenados por 'dia'
 exports.getByUserIdAndOrderByDia = async (req, res) => {
-  const { user_id } = req.params;  // Obtener el user_id de los parámetros
+  const { user_id } = req.params;
   try {
+    // Obtener los programas del usuario
     const userProgramas = await UserPrograma.findAll({
-      where: { user_id },  // Filtrar por user_id
-      include: [{
-        model: EstresTecnicas,  // Incluir la tabla relacionada 'EstresTecnicas'
-        as: 'tecnica',  // Alias para acceder a los datos de EstresTecnicas
-        attributes: ['id', 'nombre', 'mensaje', 'steps', 'tipo', 'icon']  // Especificar los campos que quieres obtener
-      }],
-      order: [['dia', 'ASC']]  // Ordenar por el campo 'dia' de forma ascendente
+      where: { user_id },
+      order: [['dia', 'ASC']]
     });
 
     if (userProgramas.length === 0) {
       return res.status(404).json({ error: 'No se encontraron programas para este usuario' });
     }
 
-    res.status(200).json(userProgramas);
+    // Si necesitas los datos de EstresTecnicas por separado, puedes hacer una consulta adicional
+    const estresTecnicas = await EstresTecnicas.findAll(); // Aquí se recuperan todas las técnicas, puedes agregar condiciones si es necesario
+
+    res.status(200).json({ userProgramas, estresTecnicas }); // Responder con los datos de ambas tablas
   } catch (error) {
-    console.error('Error al obtener los programas de usuario:', error);  // Imprimir el error en la consola
-    res.status(500).json({ error: `Error al obtener los programas de usuario: ${error.message}` });  // Enviar el mensaje de error
+    console.error('Error al obtener los programas de usuario:', error);
+    res.status(500).json({ error: `Error al obtener los programas de usuario: ${error.message}` });
   }
 };
+
 
 
 // Obtener todos los registros de UserPrograma junto con los detalles de EstresTecnicas

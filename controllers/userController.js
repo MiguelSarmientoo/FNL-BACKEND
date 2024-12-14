@@ -34,6 +34,8 @@ async function login(req, res) {
       username: user.username,
       email: user.email,
       permisopoliticas: user.permisopoliticas,
+      userresponsebool: user.userresponsebool,
+      testestresbool: user.testestresbool,
     });
   } catch (error) {
     console.error('Error en el login:', error);
@@ -152,7 +154,7 @@ async function getAllUsers(req, res) {
 // Actualizar un usuario
 async function updateUser(req, res) {
   const { id } = req.params;
-  const { username, email, password, permisopoliticas, funcyinteract } = req.body;
+  const { username, email, password, permisopoliticas, funcyinteract, userresponsebool, testestresbool } = req.body;
 
   try {
     const user = await User.findByPk(id);
@@ -167,6 +169,15 @@ async function updateUser(req, res) {
     if (permisopoliticas !== undefined) user.permisopoliticas = permisopoliticas;
     if (funcyinteract !== undefined) user.funcyinteract = funcyinteract;
 
+    if (userresponsebool !== undefined) {
+      // Convertir booleano a TINYINT(1) (1 o 0)
+      user.userresponsebool = userresponsebool === true || userresponsebool === 'true' ? 1 : 0;
+    }
+
+    if (testestresbool !== undefined) {
+      user.testestresbool = testestresbool === true || testestresbool === 'true' ? 1 : 0;
+    }
+
     await user.save();
 
     res.status(200).json({ message: 'Usuario actualizado correctamente', data: user });
@@ -175,6 +186,7 @@ async function updateUser(req, res) {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
+
 
 // Obtener un usuario por ID
 async function getUserById(req, res) {

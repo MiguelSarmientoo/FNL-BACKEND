@@ -84,19 +84,20 @@ const getBotResponse = async (prompt, userId) => {
       `
     };    
 
-    // Limitar el historial para no exceder el límite de tokens
-    let totalTokens = countTokens(systemMessage.content);
+    // Limitar el historial a solo los mensajes más recientes para que no supere el límite de tokens
+    let totalTokens = countTokens(systemMessage.content) + MAX_TOKENS;
     const limitedChatHistory = [];
 
     for (let i = chatHistory.length - 1; i >= 0; i--) {
       const messageTokens = countTokens(chatHistory[i].content);
-      if (totalTokens + messageTokens + MAX_TOKENS <= 4096) { // Incluye margen para la respuesta
+      if (totalTokens + messageTokens <= 4096) { // Asegúrate de que no supere el límite
         limitedChatHistory.unshift(chatHistory[i]);
         totalTokens += messageTokens;
       } else {
-        break;
+        break; // Detén la iteración si se excede el límite
       }
     }
+
 
     // Mensaje de éxito para la lectura del historial
     console.log('Historial leído correctamente:', limitedChatHistory);
@@ -107,7 +108,7 @@ const getBotResponse = async (prompt, userId) => {
       {
         model: 'gpt-4',
         messages: [systemMessage, ...limitedChatHistory],
-        max_tokens: 1000,  // Permitir respuestas más largas
+        max_tokens: 1500,  // Permitir respuestas más largas
         temperature: 0.2,  // Respuestas más coherentes y precisas
         top_p: 1.0,
         frequency_penalty: 0.0,

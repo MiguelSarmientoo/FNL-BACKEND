@@ -1,4 +1,3 @@
-//models/user.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -28,13 +27,23 @@ const User = sequelize.define('User', {
     defaultValue: false,
   },
   funcyinteract: { 
-    type: DataTypes.INTEGER,
+    type: DataTypes.INTEGER, // Si es un entero, usa valores numéricos como 0 (false) o 1 (true)
     allowNull: true,
-    defaultValue: false,
+    defaultValue: 0, // Usar un valor numérico en lugar de false
   },
   profileImage: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  userresponsebool: { 
+    type: DataTypes.BOOLEAN, // Sequelize lo mapea a TINYINT(1) en MySQL
+    allowNull: false,
+    defaultValue: false,
+  },
+  testestresbool: { 
+    type: DataTypes.BOOLEAN, // Sequelize lo mapea a TINYINT(1) en MySQL
+    allowNull: false,
+    defaultValue: false,
   },
 }, {
   timestamps: false,
