@@ -117,8 +117,13 @@ const UserPrograma = sequelize.define('UserPrograma', {
   },
   start_date: {
     type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,  // Valor por defecto de la fecha de inicio es el momento actual
+    allowNull: true,
+    defaultValue: null,  // Valor por defecto de la fecha de inicio es el momento actual
+  },
+  completed_date: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: null,  // Valor por defecto de la fecha de inicio es el momento actual
   },
 }, {
   timestamps: false,
