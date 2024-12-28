@@ -5,6 +5,7 @@ const UserResponse = require('../models/user_responses');
 const User = require('../models/user');
 const { getBotResponse } = require('./openaiController');
 const moment = require('moment');
+const { addDays } = require('date-fns');
 
 
 
@@ -231,7 +232,7 @@ exports.createAndGenerateReport = async (req, res) => {
     }
 
     // Preparar los registros para insertar en la base de datos
-    const startDate = new Date(); // Fecha actual
+    const currentDate = new Date(); // Fecha actual
     const registros = programas.map(item => ({
       user_id: user_id,
       dia: item.día,
@@ -239,7 +240,8 @@ exports.createAndGenerateReport = async (req, res) => {
       tipo_tecnica: item.tipo_técnica,
       descripcion: item.descripción,
       guia: JSON.stringify(item.guía),
-      start_date: startDate,
+      start_date: item.día === 1 ? currentDate : null,
+      completed_date: null,
       comentario: item.comentario || null,
       estrellas: item.estrellas || 3
     }));
@@ -293,8 +295,8 @@ exports.updateByUserAndTecnica = async (req, res) => {
     // Buscar el registro basado en user_id y estrestecnicas_id
     const userPrograma = await UserPrograma.findOne({
       where: {
-        user_id,
-        id
+        user_id: user_id,
+        id: id
       }
     });
 
@@ -307,8 +309,22 @@ exports.updateByUserAndTecnica = async (req, res) => {
     userPrograma.estrellas = estrellas !== undefined ? estrellas : userPrograma.estrellas;
 
     // Guardar los cambios en la base de datos
+    if (userPrograma.completed_date == null) userPrograma.completed_date = new Date();
+
     await userPrograma.save();
 
+    const nextProgram = await UserPrograma.findOne({
+      where: {
+        user_id: user_id,
+        dia: userPrograma.dia + 1
+      }
+    });
+
+    if (nextProgram){
+      nextProgram.start_date = addDays(new Date(), 1);
+      await nextProgram.save();
+    }
+    
     res.status(200).json({
       message: 'Programa actualizado con éxito',
       userPrograma
