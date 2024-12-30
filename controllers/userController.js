@@ -150,7 +150,21 @@ async function getAllUsers(req, res) {
     res.status(500).json({ error: 'Error al obtener los usuarios' });
   }
 }
-
+//listar usuarios para el dashborad
+async function listUsers(req, res) {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'email', 'profileImage', 'created_at']
+    });
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error('Error listing users:', error);
+    return res.status(500).json({ 
+      message: 'Error retrieving users',
+      error: error.message 
+    });
+  }
+}
 // Actualizar un usuario
 async function updateUser(req, res) {
   const { id } = req.params;
@@ -212,4 +226,5 @@ module.exports = {
   getUserById,
   getUserProfile,
   updateProfile,
+  listUsers,
 };
