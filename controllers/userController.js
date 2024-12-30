@@ -1,8 +1,9 @@
-const { User, UserResponses } = require('../models');
+const { User, UserResponses, UserEstresSession } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
+const sequelize = require('../config/database');
 
 // Login de usuario y generación de token
 async function login(req, res) {
@@ -153,14 +154,39 @@ async function getAllUsers(req, res) {
 //listar usuarios para el dashborad
 async function listUsers(req, res) {
   try {
-    const users = await User.findAll({
-      attributes: ['id', 'username', 'email', 'profileImage', 'created_at']
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const countQuery = `SELECT COUNT(*) as total FROM users`;
+    const [{ total }] = await sequelize.query(countQuery, {
+      type: sequelize.QueryTypes.SELECT
     });
-    return res.status(200).json(users);
+
+    const query = `
+      SELECT u.id, u.username, u.email, u.profileImage, u.created_at, 
+             ues.estres_nivel_id
+      FROM users u
+      LEFT JOIN user_estres_sessions ues ON u.id = ues.user_id
+      LIMIT :limit OFFSET :offset
+    `;
+    
+    const users = await sequelize.query(query, {
+      replacements: { limit, offset },
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    return res.status(200).json({
+      users,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
-    console.error('Error listing users:', error);
     return res.status(500).json({ 
-      message: 'Error retrieving users',
+      message: 'Error al obtener los usuarios',
       error: error.message 
     });
   }
