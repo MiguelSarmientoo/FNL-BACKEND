@@ -15,5 +15,6 @@ router.get('/datos/users/:id', userController.getUserById);
 router.get('/perfilUsuario/:id', userController.getUserProfile);
 router.post('/actualizarPerfil/:id', upload, userController.updateProfile);
 router.get('/users/list', userController.listUsers);
+router.get('/users/:id', userController.getUserDashboard);
 
 module.exports = router;

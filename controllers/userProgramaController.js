@@ -264,27 +264,36 @@ exports.createAndGenerateReport = async (req, res) => {
 
 
 exports.getByUserId = async (req, res) => {
-  const { user_id } = req.params;  // Obtener el user_id de los parámetros
+  const { user_id } = req.params;
+  const { page = 1, size = 10 } = req.query;
+
   try {
-    const userProgramas = await UserPrograma.findAll({
-      where: { user_id },  // Filtrar por user_id
-      include: [{
-        model: EstresTecnicas,  // Incluir la tabla relacionada 'EstresTecnicas'
-        as: 'tecnica',  // Alias para acceder a los datos de EstresTecnicas
-        attributes: ['id', 'nombre', 'mensaje', 'steps', 'tipo', 'icon']  // Especificar los campos que quieres obtener
-      }]
+    const limit = parseInt(size, 10);
+    const offset = (parseInt(page, 10) - 1) * limit;
+
+    const { count, rows: userProgramas } = await UserPrograma.findAndCountAll({
+      where: { user_id },
+      attributes: ['id', 'dia', 'nombre_tecnica','comentario', 'estrellas', 'start_date', 'completed_date'],
+      limit,
+      offset,
+      order: [['dia', 'DESC']]
     });
-    
-    if (userProgramas.length === 0) {
+
+    if (count === 0) {
       return res.status(404).json({ error: 'No se encontraron programas para este usuario' });
     }
-    
-    res.status(200).json(userProgramas);
+
+    res.status(200).json({
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: parseInt(page, 10),
+      data: userProgramas
+    });
   } catch (error) {
-    console.error('Error al obtener los programas de usuario:', error);  // Imprimir el error en la consola
-    res.status(500).json({ error: `Error al obtener los programas de usuario: ${error.message}` });  // Enviar el mensaje de error
+    res.status(500).json({ error: `Error al obtener los programas de usuario: ${error.message}` });
   }
 };
+
 
 // Actualizar un registro de UserPrograma por user_id y estrestecnicas_id
 exports.updateByUserAndTecnica = async (req, res) => {

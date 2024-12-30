@@ -164,10 +164,12 @@ async function listUsers(req, res) {
     });
 
     const query = `
-      SELECT u.id, u.username, u.email, u.profileImage, u.created_at, 
-             ues.estres_nivel_id
+      SELECT u.id, u.username, u.email, u.profileImage, 
+             ues.estres_nivel_id, hl.level
       FROM users u
       LEFT JOIN user_estres_sessions ues ON u.id = ues.user_id
+      JOIN user_responses ur ON u.id = ur.user_id
+      JOIN hierarchical_level hl ON ur.hierarchical_level_id = hl.id
       LIMIT :limit OFFSET :offset
     `;
     
@@ -191,6 +193,38 @@ async function listUsers(req, res) {
     });
   }
 }
+//mostrar inforamcion de un solo usuario dashboard
+async function getUserDashboard(req, res) {
+  const { id } = req.params;
+
+  try {
+    const [results] = await sequelize.query(
+      `
+      SELECT 
+        u.username, 
+        u.email, 
+        u.profileImage, 
+        u.created_at, 
+        s.estres_nivel_id
+      FROM users u
+      LEFT JOIN user_estres_sessions s ON u.id = s.user_id
+      WHERE u.id = :id
+      `,
+      {
+        replacements: { id },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (!results) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error al obtener el usuario:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+}
+
 // Actualizar un usuario
 async function updateUser(req, res) {
   const { id } = req.params;
@@ -253,4 +287,5 @@ module.exports = {
   getUserProfile,
   updateProfile,
   listUsers,
+  getUserDashboard
 };
