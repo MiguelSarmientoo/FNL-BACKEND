@@ -27,7 +27,8 @@ const hierarchicalLevelMap = {
   1: 'Gerente',
   2: 'Supervisor',
   3: 'Coordinador',
-  4: 'Analista'
+  4: 'Analista',
+  5: 'Otro'
 };
 
 const responsabilityLevelMap = {
