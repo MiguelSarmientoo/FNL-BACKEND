@@ -13,7 +13,7 @@ const { addDays } = require('date-fns');
 const estresNivelMap = {
   1: 'Leve',
   2: 'Moderado',
-  3: 'Alto'
+  3: 'Severo'
 };
 
 const ageRangeMap = {
