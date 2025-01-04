@@ -33,6 +33,7 @@ async function login(req, res) {
       userId: user.id,
       username: user.username,
       email: user.email,
+      id_empresa: user.id_empresa,
       permisopoliticas: user.permisopoliticas,
       userresponsebool: user.userresponsebool,
       testestresbool: user.testestresbool,
@@ -44,12 +45,12 @@ async function login(req, res) {
 }
 
 async function createUser(req, res) {
-  const { username, password, email } = req.body;
+  const { username, password, email, id_empresa } = req.body;
   const file = req.file; // Ahora usamos req.file, ya que es un solo archivo
 
   try {
     // Validaciones básicas
-    if (!username || !password || !email) {
+    if (!username || !password || !email || !id_empresa) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
@@ -72,6 +73,7 @@ async function createUser(req, res) {
       username,
       password: hashedPassword,
       email,
+      id_empresa,
       profileImage: profileImagePath,
       created_at: new Date(),
     });

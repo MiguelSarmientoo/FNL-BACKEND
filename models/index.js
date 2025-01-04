@@ -6,6 +6,7 @@ const HierarchicalLevel = require('./hierarchicalLevel');
 const ResponsabilityLevel = require('./responsabilityLevel');
 const Gender = require('./gender');
 const UserResponses = require('./user_responses');
+const Empresa = require('./empresas');
 const TestEstres = require('./test_estres');
 const EstresTecnicas = require('./estrestecnicas');
 const UserPrograma = require('./userprograma');
@@ -29,6 +30,7 @@ sequelize.sync()
 
 module.exports = {
   User,
+  Empresa,
   Message,
   AgeRange,
   HierarchicalLevel,

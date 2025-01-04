@@ -130,89 +130,104 @@ exports.createAndGenerateReport = async (req, res) => {
         tipo: 'Técnicas de relajación',
         prompt: `
           Genera un programa personalizado para los días 1 a 7 (Técnicas de Relajación).
-          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Este programa debe:
+          - Ser gradual y compatible con las actividades cotidianas del usuario.
+          - Contener técnicas realizables sin necesidad de elementos externos.
+          - Incluir un mínimo de 15 pasos detallados y fáciles de seguir por técnica.
+    
           Responde en formato JSON estrictamente válido:
           [
             {
               "día": (número del día, tipo int),
               "nombre_técnica": "Nombre de la técnica",
-              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "tipo_técnica": "Subtítulo breve de la técnica",
               "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
-              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+              "guía": ["Paso 1: Descripción del paso...", "Paso 2: Descripción del paso...", ..., "Paso 15: Descripción del paso..."]
             }
           ]
-          **Datos del usuario:**
+    
+          Datos del usuario:
           - Nombre: ${user.username}
           - Edad: ${age_range}
           - Nivel jerárquico: ${hierarchical_level}
           - Nivel de responsabilidad: ${responsability_level}
           - Género: ${gender}
           - Nivel de estrés: ${estres_nivel}
-
-          **Respuestas al test de estrés:**
+    
+          Respuestas al test de estrés:
           ${resumenRespuestas}
-
-          **Nota:** Solo responde con el JSON válido.
+    
+          Nota: Solo responde con el JSON válido.
         `
       },
       {
         seccion: 'Días 8-14',
         tipo: 'Reestructuración cognitiva',
         prompt: `
-          Genera un programa personalizado para los días 8 a 14 (Reestructuración Cognitiva). 
-          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Genera un programa personalizado para los días 8 a 14 (Reestructuración Cognitiva).
+          Este programa debe:
+          - Ser gradual y compatible con las actividades cotidianas del usuario.
+          - Contener técnicas realizables sin necesidad de elementos externos.
+          - Incluir un mínimo de 15 pasos detallados y fáciles de seguir por técnica.
+    
           Responde en formato JSON estrictamente válido:
           [
             {
               "día": (número del día, tipo int),
               "nombre_técnica": "Nombre de la técnica",
-              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "tipo_técnica": "Subtítulo breve de la técnica",
               "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
-              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+              "guía": ["Paso 1: Descripción del paso...", "Paso 2: Descripción del paso...", ..., "Paso 15: Descripción del paso..."]
             }
           ]
-          **Datos del usuario:**
+    
+          Datos del usuario:
           - Nombre: ${user.username}
           - Edad: ${age_range}
           - Nivel jerárquico: ${hierarchical_level}
           - Nivel de responsabilidad: ${responsability_level}
           - Género: ${gender}
           - Nivel de estrés: ${estres_nivel}
-
-          **Respuestas al test de estrés:**
+    
+          Respuestas al test de estrés:
           ${resumenRespuestas}
-
-          **Nota:** Solo responde con el JSON válido.
+    
+          Nota: Solo responde con el JSON válido.
         `
       },
       {
         seccion: 'Días 15-21',
         tipo: 'Técnicas de PNL',
         prompt: `
-          Genera un programa personalizado para los días 15 a 21 (Técnicas de PNL). 
-          Este programa debe ser gradual, permitiendo al usuario realizar las técnicas junto a sus actividades cotidianas.
+          Genera un programa personalizado para los días 15 a 21 (Técnicas de PNL).
+          Este programa debe:
+          - Ser gradual y compatible con las actividades cotidianas del usuario.
+          - Contener técnicas realizables sin necesidad de elementos externos.
+          - Incluir un mínimo de 15 pasos detallados y fáciles de seguir por técnica.
+    
           Responde en formato JSON estrictamente válido:
           [
             {
               "día": (número del día, tipo int),
               "nombre_técnica": "Nombre de la técnica",
-              "tipo_técnica": "Subtitulo breve de la tecnica",
+              "tipo_técnica": "Subtítulo breve de la técnica",
               "descripción": "Inicia motivando al usuario por su nombre y explica regularmente la técnica.",
-              "guía": ["Paso 1...", "Paso 2...", "Paso n..."]
+              "guía": ["Paso 1: Descripción del paso...", "Paso 2: Descripción del paso...", ..., "Paso 15: Descripción del paso..."]
             }
           ]
-          **Datos del usuario:**
+    
+          Datos del usuario:
           - Nombre: ${user.username}
           - Edad: ${age_range}
           - Nivel jerárquico: ${hierarchical_level}
           - Nivel de responsabilidad: ${responsability_level}
           - Género: ${gender}
           - Nivel de estrés: ${estres_nivel}
-
-          **Respuestas al test de estrés:**
+    
+          Respuestas al test de estrés:
           ${resumenRespuestas}
-
-          **Nota:** Solo responde con el JSON válido.
+    
+          Nota: Solo responde con el JSON válido.
         `
       }
     ];
