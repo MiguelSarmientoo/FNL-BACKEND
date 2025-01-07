@@ -21,5 +21,5 @@ router.post('/actualizarPerfil/:id', upload, userController.updateProfile);
 router.get('/users/list', verifyToken,userController.listUsers);
 router.get('/users/:id', userController.getUserDashboard);
 router.get('/empresa/cantidad',verifyToken, userController.countUsersByCompany);
-
+router.get('/empresa/interaccion',verifyToken, userController.interFuncy);
 module.exports = router;
