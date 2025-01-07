@@ -1,29 +1,99 @@
-const axios = require('axios');
-require('dotenv').config();
+const axios = require("axios");
+require("dotenv").config();
 
-const { Message, User } = require('../models');
-const { Op } = require('sequelize');
+const { Message, User } = require("../models");
+const { Op } = require("sequelize");
 
 const countTokens = (text) => {
-  return text.split(' ').length; // Estimación simple, no exacta
+  return text.split(" ").length; // Estimación simple, no exacta
+};
+
+const analyzeMessage = async (mensaje) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const url = "https://api.openai.com/v1/chat/completions";
+
+  const systemMessage = {
+    role: "system",
+    content: `
+  Analiza el siguiente mensaje, de parte de los usuarios de nuestra app para ayuda psicológica en el trabajo:
+  Responde en formato JSON estrictamente válido:
+    {
+      "sentimiento": "Positivo" (El mensaje tiene un tono optimista o alegre) o "Negativo" (El mensaje tiene un tono triste, enojado o preocupado) o "Neutral"(El mensaje no refleja emociones claras),
+      "factor_psicosocial": "Relación interpersonal" (e.g., problemas con jefe o compañeros) o "Estrés laboral" (e.g., carga laboral, falta de tiempo) o "Salud emocional" (e.g., sentirse triste, desmotivado) o "Ninguno" (si el mensaje no menciona ningún factor específico),
+    }
+  `,
+  };
+
+  const message = {
+    role: "user",
+    content: mensaje,
+  };
+
+  try {
+    const response = await axios.post(
+      url,
+      {
+        model: "gpt-4",
+        messages: [systemMessage, message],
+        temperature: 0.2, // Respuestas más coherentes y precisas
+        top_p: 1.0,
+        frequency_penalty: 0.0,
+        presence_penalty: 0.0,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
+
+    rpta = JSON.parse(response.data.choices[0].message.content.trim());
+
+    switch (rpta["sentimiento"]) {
+      case "Negativo":
+        rpta["score"] = -1;
+        break;
+      case "Positivo":
+        rpta["score"] = 1;
+        break;
+      default: //Neutral
+        rpta["score"] = 0;
+        break;
+    }
+
+    rpta["message_length"] = mensaje.length;
+
+    return rpta;
+  } catch (error) {
+    console.error(
+      "Error al obtener respuesta del bot:",
+      error.response?.data || error.message
+    );
+    throw new Error(
+      `Error al obtener respuesta del bot: ${
+        error.response?.data?.error?.message || error.message
+      }`
+    );
+  }
 };
 
 const getBotResponse = async (prompt, userId) => {
-  const apiKey = process.env.OPENAI_API_KEY; 
-  const url = 'https://api.openai.com/v1/chat/completions';
+  const apiKey = process.env.OPENAI_API_KEY;
+  const url = "https://api.openai.com/v1/chat/completions";
   const MAX_TOKENS = 100; // Máximo de tokens para la respuesta
 
-  if (!prompt || typeof prompt !== 'string') {
-    throw new Error('Invalid prompt');
+  if (!prompt || typeof prompt !== "string") {
+    throw new Error("Invalid prompt");
   }
 
   try {
     // Obtener el usuario por userId para obtener el username
     const user = await User.findByPk(userId);
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new Error("Usuario no encontrado");
     }
-    
+
     const username = user.username; // Obtiene el username
 
     // Obtener historial de mensajes del usuario
@@ -31,30 +101,30 @@ const getBotResponse = async (prompt, userId) => {
       where: {
         [Op.or]: [
           { user_id: userId, user_id_receptor: 1 },
-          { user_id: 1, user_id_receptor: userId }
-        ]
+          { user_id: 1, user_id_receptor: userId },
+        ],
       },
-      order: [['created_at', 'ASC']]
+      order: [["created_at", "ASC"]],
     });
 
     // Imprimir los mensajes obtenidos
-    console.log('Mensajes obtenidos:', messages);
+    console.log("Mensajes obtenidos:", messages);
 
     // Convertir historial de mensajes a formato adecuado para OpenAI
-    const chatHistory = messages.map(msg => ({
-      role: msg.user_id === userId ? 'user' : 'assistant',
-      content: msg.content
+    const chatHistory = messages.map((msg) => ({
+      role: msg.user_id === userId ? "user" : "assistant",
+      content: msg.content,
     }));
 
     // Imprimir el historial de chat
-    console.log('Historial de chat formateado:', chatHistory);
+    console.log("Historial de chat formateado:", chatHistory);
 
     // Agregar el prompt actual al historial
-    chatHistory.push({ role: 'user', content: prompt });
+    chatHistory.push({ role: "user", content: prompt });
 
     // Configurar el mensaje del sistema
     const systemMessage = {
-      role: 'system',
+      role: "system",
       content: `
         Tu nombre es Funcy, un asistente de IA especializado en apoyo psicológico y bienestar emocional. Tu propósito es ofrecer orientación comprensiva y práctica a ${username}, quien puede estar enfrentando estrés laboral o emocional. 
     
@@ -81,8 +151,9 @@ const getBotResponse = async (prompt, userId) => {
            - "Recuerda que puedes volver aquí siempre que necesites hablar. Estoy aquí para ayudarte en este proceso."
     
         Evita sugerencias superficiales o generales. Cada respuesta debe ser rica en contenido, relevante y orientada a la acción, asegurando que ${username} sienta que está recibiendo apoyo práctico y emocional de calidad.
-      `
-    };    
+        Importante, si el mensaje del usuario no está relacionado con tus facultados (ayuda psicológica) entonces deberás responder que no estás habilitado para responder mensajes que no estén relacionados al apoyo psicológico y bienestar emocional.
+      `,
+    };
 
     // Limitar el historial a solo los mensajes más recientes para que no supere el límite de tokens
     let totalTokens = countTokens(systemMessage.content) + MAX_TOKENS;
@@ -90,7 +161,8 @@ const getBotResponse = async (prompt, userId) => {
 
     for (let i = chatHistory.length - 1; i >= 0; i--) {
       const messageTokens = countTokens(chatHistory[i].content);
-      if (totalTokens + messageTokens <= 4096) { // Asegúrate de que no supere el límite
+      if (totalTokens + messageTokens <= 4096) {
+        // Asegúrate de que no supere el límite
         limitedChatHistory.unshift(chatHistory[i]);
         totalTokens += messageTokens;
       } else {
@@ -98,35 +170,41 @@ const getBotResponse = async (prompt, userId) => {
       }
     }
 
-
     // Mensaje de éxito para la lectura del historial
-    console.log('Historial leído correctamente:', limitedChatHistory);
+    console.log("Historial leído correctamente:", limitedChatHistory);
 
     // Enviar todo el historial limitado y el mensaje del sistema en una sola solicitud
     const response = await axios.post(
       url,
       {
-        model: 'gpt-4',
+        model: "gpt-4",
         messages: [systemMessage, ...limitedChatHistory],
-        max_tokens: 1500,  // Permitir respuestas más largas
-        temperature: 0.2,  // Respuestas más coherentes y precisas
+        //max_tokens: 2500,  // Permitir respuestas más largas
+        temperature: 0.2, // Respuestas más coherentes y precisas
         top_p: 1.0,
         frequency_penalty: 0.0,
         presence_penalty: 0.0,
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
         },
       }
     );
-    
+
     return response.data.choices[0].message.content.trim();
   } catch (error) {
-    console.error('Error al obtener respuesta del bot:', error.response?.data || error.message);
-    throw new Error(`Error al obtener respuesta del bot: ${error.response?.data?.error?.message || error.message}`);
+    console.error(
+      "Error al obtener respuesta del bot:",
+      error.response?.data || error.message
+    );
+    throw new Error(
+      `Error al obtener respuesta del bot: ${
+        error.response?.data?.error?.message || error.message
+      }`
+    );
   }
 };
 
-module.exports = { getBotResponse };
+module.exports = { getBotResponse, analyzeMessage };
