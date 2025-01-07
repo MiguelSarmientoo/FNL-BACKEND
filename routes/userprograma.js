@@ -8,14 +8,15 @@ router.get('/userprograma', userProgramaController.getAll);
 router.post('/userprograma', userProgramaController.create);
 router.put('/userprograma/:id', userProgramaController.update);
 router.delete('/userprograma/:id', userProgramaController.delete);
-router.get('/userprograma/user/:user_id', userProgramaController.getByUserId);
+
 
 router.post('/userprograma/report/:user_id', userProgramaController.createAndGenerateReport);
 
 router.post('/userprograma/getprogramcompleto/:user_id', userProgramaController.getByUserIdAndOrderByDia);
 router.put('/userprograma/:user_id/:id', userProgramaController.updateByUserAndTecnica);
 
-
+//dashboard
+router.get('/userprograma/user/:user_id', userProgramaController.getByUserId);
 
 module.exports = router;
 

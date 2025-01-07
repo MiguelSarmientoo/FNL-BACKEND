@@ -15,6 +15,9 @@ router.put('/users/:id', userController.updateUser);
 router.get('/datos/users/:id', userController.getUserById);
 router.get('/perfilUsuario/:id', userController.getUserProfile);
 router.post('/actualizarPerfil/:id', upload, userController.updateProfile);
+
+
+//dashboard
 router.get('/users/list', verifyToken,userController.listUsers);
 router.get('/users/:id', userController.getUserDashboard);
 router.get('/empresa/cantidad',verifyToken, userController.countUsersByCompany);
