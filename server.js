@@ -16,7 +16,7 @@ const userPrograma = require('./routes/userprograma');
 const estresTecnicas = require('./routes/estrestecnicas');
 const tipoTecnicas = require('./routes/tipotecnicas');
 const testEstresSalidaRoutes = require('./routes/test_estres_salida'); 
-
+const empresaRouter = require('./routes/empresa');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -43,6 +43,7 @@ app.use('/api', userPrograma);
 app.use('/api', estresTecnicas);
 app.use('/api', tipoTecnicas);
 app.use('/api', testEstresSalidaRoutes);
+app.use('/api',empresaRouter);
 
 // Configuración de ruta estática para archivos de imagen
 app.use('/imagenes', express.static(path.join(__dirname, 'imagenes')));
