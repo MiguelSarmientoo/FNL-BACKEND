@@ -453,7 +453,8 @@ exports.delete = async (req, res) => {
 };
 
 //cantidad de tareas que comnpletaron los empleados de la empresa
-async function taskCompleted(req, res) {
+//falta probar
+/*async function taskCompleted(req, res) {
   try {
     const { id_empresa } = req.user; // Obtener el id_empresa del usuario autenticado
 
@@ -488,6 +489,6 @@ async function taskCompleted(req, res) {
       error: error.message
     });
   }
-}
+}*/
 
 exports.taskCompleted = taskCompleted;

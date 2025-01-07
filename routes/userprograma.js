@@ -18,6 +18,7 @@ router.put('/userprograma/:user_id/:id', userProgramaController.updateByUserAndT
 
 //dashboard
 router.get('/userprograma/user/:user_id', userProgramaController.getByUserId);
-router.get('/userprograma/completadas', userProgramaController.taskCompleted);
+//por probar
+//router.get('/userprograma/completadas', userProgramaController.taskCompleted);
 module.exports = router;
 
