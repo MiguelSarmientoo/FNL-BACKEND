@@ -451,3 +451,43 @@ exports.delete = async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar el programa de usuario' });
   }
 };
+
+//cantidad de tareas que comnpletaron los empleados de la empresa
+async function taskCompleted(req, res) {
+  try {
+    const { id_empresa } = req.user; // Obtener el id_empresa del usuario autenticado
+
+    // Consulta SQL para contar las tareas completadas
+    const query = `
+      SELECT 
+        COUNT(up.id) AS total_tareas_completadas
+      FROM userprograma up
+      JOIN users u ON up.user_id = u.id
+      WHERE up.completed_date IS NOT NULL
+        AND u.id_empresa = :id_empresa
+    `;
+
+    // Ejecutar la consulta
+    const result = await sequelize.query(query, {
+      replacements: { id_empresa },
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    const { total_tareas_completadas } = result[0]; 
+
+    // Enviar la respuesta al cliente
+    return res.status(200).json({
+      success: true,
+      total_tareas_completadas
+    });
+  } catch (error) {
+    console.error('Error al obtener las tareas completadas:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al obtener las tareas completadas',
+      error: error.message
+    });
+  }
+}
+
+exports.taskCompleted = taskCompleted;

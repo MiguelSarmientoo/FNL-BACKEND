@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userProgramaController = require('../controllers/userProgramaController');
+const { route } = require('./user');
 
 // CRUD routes
 router.get('/userprograma', userProgramaController.getAll);
@@ -17,6 +18,6 @@ router.put('/userprograma/:user_id/:id', userProgramaController.updateByUserAndT
 
 //dashboard
 router.get('/userprograma/user/:user_id', userProgramaController.getByUserId);
-
+router.get('/userprograma/completadas', userProgramaController.taskCompleted);
 module.exports = router;
 
