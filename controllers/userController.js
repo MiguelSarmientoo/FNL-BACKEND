@@ -158,12 +158,21 @@ async function listUsers(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-
-    const countQuery = `SELECT COUNT(*) as total FROM users`;
+    console.log(req.user)
+    const { id_empresa, decoded} = req.user; // Obtenemos el id_empresa del usuario autenticado
+    const { userId } = decoded;
+    // Primero, obtenemos el conteo total de usuarios de la misma empresa
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM users 
+      WHERE id_empresa = :id_empresa
+    `;
     const [{ total }] = await sequelize.query(countQuery, {
+      replacements: { id_empresa },
       type: sequelize.QueryTypes.SELECT
     });
 
+    // Consulta para obtener los usuarios con el mismo id_empresa
     const query = `
       SELECT u.id, u.username, u.email, u.profileImage, 
              ues.estres_nivel_id, hl.level
@@ -171,11 +180,12 @@ async function listUsers(req, res) {
       LEFT JOIN user_estres_sessions ues ON u.id = ues.user_id
       JOIN user_responses ur ON u.id = ur.user_id
       JOIN hierarchical_level hl ON ur.hierarchical_level_id = hl.id
+      WHERE u.id_empresa = :id_empresa AND u.id != :userId
       LIMIT :limit OFFSET :offset
     `;
     
     const users = await sequelize.query(query, {
-      replacements: { limit, offset },
+      replacements: { id_empresa,userId, limit, offset,  },
       type: sequelize.QueryTypes.SELECT
     });
     
@@ -194,6 +204,7 @@ async function listUsers(req, res) {
     });
   }
 }
+
 //mostrar inforamcion de un solo usuario dashboard
 async function getUserDashboard(req, res) {
   const { id } = req.params;
@@ -296,6 +307,7 @@ async function countUsersByCompany(req, res) {
       WHERE e.id = :id_empresa
       GROUP BY e.id, e.nombre, e.ruc
     `;
+
 
     const result = await sequelize.query(query, {
       replacements: { id_empresa },
