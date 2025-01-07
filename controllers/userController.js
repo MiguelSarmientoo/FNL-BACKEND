@@ -373,6 +373,47 @@ async function interFuncy(req, res) {
     });
   }
 }
+//cantidad de usuarios que interactuaron con funcy de la empresa
+async function cantUserFuncy(req, res) {
+  try {
+    const { id_empresa } = req.user;
+
+    const query = `
+      SELECT 
+        e.id,
+        COUNT(u.funcyinteract) as total_usuarios_funcy
+      FROM empresas e
+      LEFT JOIN users u ON e.id = u.id_empresa
+      WHERE e.id = :id_empresa AND u.funcyinteract != 0
+      GROUP BY e.id
+    `;
+
+    const result = await sequelize.query(query, {
+      replacements: { id_empresa },
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    if (result.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Empresa no encontrada'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result[0]
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener el conteo de interacciones con Funcy',
+      error: error.message 
+    });
+  }
+}
+
+
 module.exports = {
   login,
   createUser,
@@ -385,4 +426,5 @@ module.exports = {
   getUserDashboard,
   countUsersByCompany,
   interFuncy,
+  cantUserFuncy,
 };
