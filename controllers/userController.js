@@ -37,6 +37,7 @@ async function login(req, res) {
       permisopoliticas: user.permisopoliticas,
       userresponsebool: user.userresponsebool,
       testestresbool: user.testestresbool,
+      id_empresa: user.id_empresa,
     });
   } catch (error) {
     console.error('Error en el login:', error);
@@ -278,6 +279,48 @@ async function getUserById(req, res) {
   }
 }
 
+//listar cantidad de empleado por empresa
+async function countUsersByCompany(req, res) {
+  try {
+    // Obtenemos el id_empresa del usuario logueado que viene en el req.user
+    const { id_empresa } = req.user;
+
+    const query = `
+      SELECT 
+        e.id,
+        e.nombre as empresa_nombre,
+        e.ruc,
+        COUNT(u.id) - 1 as total_empleados
+      FROM empresas e
+      LEFT JOIN users u ON e.id = u.id_empresa
+      WHERE e.id = :id_empresa
+      GROUP BY e.id, e.nombre, e.ruc
+    `;
+
+    const result = await sequelize.query(query, {
+      replacements: { id_empresa },
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    if (result.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Empresa no encontrada'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result[0]
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error al obtener el conteo de empleados de la empresa',
+      error: error.message 
+    });
+  }
+}
 module.exports = {
   login,
   createUser,
@@ -287,5 +330,6 @@ module.exports = {
   getUserProfile,
   updateProfile,
   listUsers,
-  getUserDashboard
+  getUserDashboard,
+  countUsersByCompany,
 };

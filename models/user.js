@@ -45,6 +45,10 @@ const User = sequelize.define('User', {
     allowNull: false,
     defaultValue: false,
   },
+  id_empresa: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
 }, {
   timestamps: false,
   tableName: 'users',
