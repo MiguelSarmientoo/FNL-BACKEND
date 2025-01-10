@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const openaiController = require('../controllers/openaiController');
-
-router.post('/ask', async (req, res) => {
+const authMiddleware = require('../utils/authMiddleware');
+router.post('/ask', authMiddleware.rateLimitOpenAi, async (req, res) => {
   const { prompt, userId } = req.body;
   try {
     const response = await openaiController.getBotResponse(prompt, userId);
