@@ -374,40 +374,42 @@ async function cantUserFuncy(req, res) {
   try {
     const { id_empresa } = req.user;
 
-    const query = `
-      SELECT 
-        e.id,
-        COUNT(u.funcyinteract) as total_usuarios_funcy
-      FROM empresas e
-      LEFT JOIN users u ON e.id = u.id_empresa
-      WHERE e.id = :id_empresa AND u.funcyinteract != 0
-      GROUP BY e.id
-    `;
-
-    const result = await sequelize.query(query, {
-      replacements: { id_empresa },
-      type: sequelize.QueryTypes.SELECT
+    const empresa = await Empresa.findOne({
+      where: { id: id_empresa },
+      attributes: ['id'],
+      include: [{
+        model: User,
+        where: { id_empresa: id_empresa, funcyinteract: { [Sequelize.Op.ne]: 0 } },
+        attributes: ['funcyinteract'],
+        required: false
+      }]
     });
-    
-    if (result.length === 0) {
+
+    if (!empresa) {
       return res.status(404).json({
         success: false,
         message: 'Empresa no encontrada'
       });
     }
 
+    const totalUsuariosFuncy = empresa.Users.length;
+
     return res.status(200).json({
       success: true,
-      data: result[0]
+      data: {
+        id: empresa.id,
+        total_usuarios_funcy: totalUsuariosFuncy
+      }
     });
   } catch (error) {
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: 'Error al obtener el conteo de interacciones con Funcy',
-      error: error.message 
+      error: error.message
     });
   }
 }
+
 
 
 module.exports = {
