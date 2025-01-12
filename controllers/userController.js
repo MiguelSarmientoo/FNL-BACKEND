@@ -160,9 +160,8 @@ async function listUsers(req, res) {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     console.log(req.user)
-    const { id_empresa, decoded} = req.user; // Obtenemos el id_empresa del usuario autenticado
+    const { id_empresa, decoded} = req.user; 
     const { userId } = decoded;
-    // Primero, obtenemos el conteo total de usuarios de la misma empresa
     const countQuery = `
       SELECT COUNT(*) as total 
       FROM users 
@@ -173,7 +172,6 @@ async function listUsers(req, res) {
       type: sequelize.QueryTypes.SELECT
     });
 
-    // Consulta para obtener los usuarios con el mismo id_empresa
     const query = `
       SELECT u.id, u.username, u.email, u.profileImage, 
              ues.estres_nivel_id, hl.level
