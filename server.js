@@ -19,6 +19,7 @@ const testEstresSalidaRoutes = require('./routes/test_estres_salida');
 const empresaRouter = require('./routes/empresa');
 const { UserEstresSession, User, HierarchicalLevel } = require('./models');
 const UserResponse = require('./models/user_responses');
+const Empresa = require('./models/empresa');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -53,7 +54,8 @@ User.hasMany(UserEstresSession, { foreignKey: 'user_id' });
 User.hasMany(UserResponse, { foreignKey: 'user_id' });
 UserResponse.belongsTo(HierarchicalLevel, { foreignKey: 'hierarchical_level_id' });
 UserEstresSession.belongsTo(User, { foreignKey: 'user_id' });
-
+Empresa.hasMany(User, { foreignKey: 'id_empresa' });
+User.belongsTo(Empresa, { foreignKey: 'id_empresa' });
 // Sincroniza los modelos con la base de datos
 sequelize.sync({ force: false })
   .then(() => {

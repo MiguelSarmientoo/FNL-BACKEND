@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const sequelize = require('../config/database');
+const Empresa = require('../models/empresa');
 
 // Login de usuario y generación de token
 async function login(req, res) {
@@ -288,46 +289,45 @@ async function getUserById(req, res) {
 //listar cantidad de empleado por empresa
 async function countUsersByCompany(req, res) {
   try {
-    // Obtenemos el id_empresa del usuario logueado que viene en el req.user
     const { id_empresa } = req.user;
 
-    const query = `
-      SELECT 
-        e.id,
-        e.nombre as empresa_nombre,
-        e.ruc,
-        COUNT(u.id) - 1 as total_empleados
-      FROM empresas e
-      LEFT JOIN users u ON e.id = u.id_empresa
-      WHERE e.id = :id_empresa
-      GROUP BY e.id, e.nombre, e.ruc
-    `;
-
-
-    const result = await sequelize.query(query, {
-      replacements: { id_empresa },
-      type: sequelize.QueryTypes.SELECT
+    const empresa = await Empresa.findOne({
+      where: { id: id_empresa },
+      attributes: ['id', 'nombre', 'ruc'],
+      include: [{
+        model: User,
+        where: { id_empresa: id_empresa },
+        required: false
+      }]
     });
-    
-    if (result.length === 0) {
+
+    if (!empresa) {
       return res.status(404).json({
         success: false,
         message: 'Empresa no encontrada'
       });
     }
 
+    const totalEmpleados = empresa.Users.length;
+
     return res.status(200).json({
       success: true,
-      data: result[0]
+      data: {
+        id: empresa.id,
+        empresa_nombre: empresa.nombre,
+        ruc: empresa.ruc,
+        total_empleados: totalEmpleados
+      }
     });
   } catch (error) {
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: 'Error al obtener el conteo de empleados de la empresa',
-      error: error.message 
+      error: error.message
     });
   }
 }
+
 
 //contar las interacciones que se tuvo con funcy por empresa
 async function interFuncy(req, res) {
