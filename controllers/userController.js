@@ -234,7 +234,7 @@ async function getUserDashboard(req, res) {
 }
 
 // Actualizar un usuario
-async function updateUser(req, res) {
+/*async function updateUser(req, res) {
   const { id } = req.params;
   const { username, email, password, permisopoliticas, funcyinteract, userresponsebool, testestresbool } = req.body;
 
@@ -268,8 +268,39 @@ async function updateUser(req, res) {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
+*/
+async function updateUser(req, res) {
+  const { id } = req.params;
+  const { username, password, email, permisopoliticas, funcyinteract, profileImage, testestresbool, userresponsebool, id_empresa } = req.body;
 
+  try {
+    const [updated] = await User.update({
+      username,
+      password,
+      email,
+      permisopoliticas,
+      funcyinteract,
+      profileImage,
+      testestresbool,
+      userresponsebool,
+      id_empresa
+    }, {
+      where: { id }
+    });
 
+    if (updated) {
+      const updatedUser = await User.findOne({ where: { id } });
+      return res.status(200).json(updatedUser);
+    }
+
+    return res.status(404).json({ message: 'User not found' });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error updating user',
+      error: error.message
+    });
+  }
+}
 // Obtener un usuario por ID
 async function getUserById(req, res) {
   const { id } = req.params;
@@ -401,7 +432,24 @@ async function cantUserFuncy(req, res) {
     });
   }
 }
+async function deleteUser(req, res) {
+  const { id } = req.params;
 
+  try {
+    const deleted = await User.destroy({ where: { id } });
+
+    if (deleted) {
+      return res.status(204).json({ message: 'Usuario eliminado' });
+    }
+
+    return res.status(404).json({ message: 'Usuario no encontrado' });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error al eliminar el usuario',
+      error: error.message
+    });
+  }
+}
 module.exports = {
   login,
   createUser,
@@ -415,4 +463,5 @@ module.exports = {
   countUsersByCompany,
   interFuncy,
   cantUserFuncy,
+  deleteUser
 };

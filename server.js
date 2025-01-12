@@ -51,9 +51,14 @@ app.use('/api',empresaRouter);
 // Configuración de ruta estática para archivos de imagen
 app.use('/imagenes', express.static(path.join(__dirname, 'imagenes')));
 User.hasMany(UserEstresSession, { foreignKey: 'user_id' });
-User.hasMany(UserResponse, { foreignKey: 'user_id' });
-UserResponse.belongsTo(HierarchicalLevel, { foreignKey: 'hierarchical_level_id' });
 UserEstresSession.belongsTo(User, { foreignKey: 'user_id' });
+
+User.hasMany(UserResponse, { foreignKey: 'user_id' });
+UserResponse.belongsTo(User, { foreignKey: 'user_id' });
+
+UserResponse.belongsTo(HierarchicalLevel, { foreignKey: 'hierarchical_level_id' });
+HierarchicalLevel.hasMany(UserResponse, { foreignKey: 'hierarchical_level_id' });
+
 Empresa.hasMany(User, { foreignKey: 'id_empresa' });
 User.belongsTo(Empresa, { foreignKey: 'id_empresa' });
 // Sincroniza los modelos con la base de datos
