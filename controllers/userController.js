@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const sequelize = require('../config/database');
 const Empresa = require('../models/empresa');
-
+const { Op } = require('sequelize');
 // Login de usuario y generación de token
 async function login(req, res) {
   const { username, password } = req.body;
@@ -374,33 +374,25 @@ async function cantUserFuncy(req, res) {
   try {
     const { id_empresa } = req.user;
 
-    const empresa = await Empresa.findOne({
-      where: { id: id_empresa },
-      attributes: ['id'],
-      include: [{
-        model: User,
-        where: { id_empresa: id_empresa, funcyinteract: { [Sequelize.Op.ne]: 0 } },
-        attributes: ['funcyinteract'],
-        required: false
-      }]
+    const result = await User.count({
+      where: {
+        id_empresa,
+        funcyinteract: {
+          [Op.ne]: 0
+        }
+      }
     });
 
-    if (!empresa) {
-      return res.status(404).json({
-        success: false,
-        message: 'Empresa no encontrada'
-      });
-    }
-
-    const totalUsuariosFuncy = empresa.Users.length;
+    const data = {
+      id: id_empresa,
+      total_usuarios_funcy: result
+    };
 
     return res.status(200).json({
       success: true,
-      data: {
-        id: empresa.id,
-        total_usuarios_funcy: totalUsuariosFuncy
-      }
+      data
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -409,8 +401,6 @@ async function cantUserFuncy(req, res) {
     });
   }
 }
-
-
 
 module.exports = {
   login,
