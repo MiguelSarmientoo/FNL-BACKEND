@@ -334,37 +334,38 @@ async function interFuncy(req, res) {
   try {
     const { id_empresa } = req.user;
 
-    const query = `
-      SELECT 
-        e.id,
-        SUM(u.funcyinteract) as total_interacciones
-      FROM empresas e
-      LEFT JOIN users u ON e.id = u.id_empresa
-      WHERE e.id = :id_empresa
-      GROUP BY e.id
-    `;
-
-    const result = await sequelize.query(query, {
-      replacements: { id_empresa },
-      type: sequelize.QueryTypes.SELECT
+    const empresa = await Empresa.findOne({
+      where: { id: id_empresa },
+      attributes: ['id'],
+      include: [{
+        model: User,
+        where: { id_empresa: id_empresa },
+        attributes: ['funcyinteract'],
+        required: false
+      }]
     });
-    
-    if (result.length === 0) {
+
+    if (!empresa) {
       return res.status(404).json({
         success: false,
         message: 'Empresa no encontrada'
       });
     }
 
+    const totalInteracciones = empresa.Users.reduce((sum, user) => sum + user.funcyinteract, 0);
+
     return res.status(200).json({
       success: true,
-      data: result[0]
+      data: {
+        id: empresa.id,
+        total_interacciones: totalInteracciones
+      }
     });
   } catch (error) {
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: 'Error al obtener el conteo de interacciones con Funcy',
-      error: error.message 
+      error: error.message
     });
   }
 }
