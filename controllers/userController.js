@@ -210,27 +210,22 @@ async function getUserDashboard(req, res) {
   const { id } = req.params;
 
   try {
-    const [results] = await sequelize.query(
-      `
-      SELECT 
-        u.username, 
-        u.email, 
-        u.profileImage, 
-        u.created_at, 
-        s.estres_nivel_id
-      FROM users u
-      LEFT JOIN user_estres_sessions s ON u.id = s.user_id
-      WHERE u.id = :id
-      `,
-      {
-        replacements: { id },
-        type: sequelize.QueryTypes.SELECT,
-      }
-    );
-    if (!results) {
+    const user = await User.findOne({
+      where: { id },
+      attributes: ['username', 'email', 'profileImage', 'created_at'], 
+      include: [
+        {
+          model: UserEstresSession, 
+          attributes: ['estres_nivel_id'], 
+        },
+      ],
+    });
+
+    if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-    res.status(200).json(results);
+
+    res.status(200).json(user);
   } catch (error) {
     console.error('Error al obtener el usuario:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

@@ -17,6 +17,8 @@ const estresTecnicas = require('./routes/estrestecnicas');
 const tipoTecnicas = require('./routes/tipotecnicas');
 const testEstresSalidaRoutes = require('./routes/test_estres_salida'); 
 const empresaRouter = require('./routes/empresa');
+const { UserEstresSession, User, HierarchicalLevel } = require('./models');
+const UserResponse = require('./models/user_responses');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -47,6 +49,10 @@ app.use('/api',empresaRouter);
 
 // Configuración de ruta estática para archivos de imagen
 app.use('/imagenes', express.static(path.join(__dirname, 'imagenes')));
+User.hasMany(UserEstresSession, { foreignKey: 'user_id' });
+User.hasMany(UserResponse, { foreignKey: 'user_id' });
+UserResponse.belongsTo(HierarchicalLevel, { foreignKey: 'hierarchical_level_id' });
+UserEstresSession.belongsTo(User, { foreignKey: 'user_id' });
 
 // Sincroniza los modelos con la base de datos
 sequelize.sync({ force: false })
