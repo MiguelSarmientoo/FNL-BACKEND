@@ -456,9 +456,7 @@ exports.delete = async (req, res) => {
 //falta probar
 /*async function taskCompleted(req, res) {
   try {
-    const { id_empresa } = req.user; // Obtener el id_empresa del usuario autenticado
-
-    // Consulta SQL para contar las tareas completadas
+    const { id_empresa } = req.user; 
     const query = `
       SELECT 
         COUNT(up.id) AS total_tareas_completadas
@@ -467,8 +465,7 @@ exports.delete = async (req, res) => {
       WHERE up.completed_date IS NOT NULL
         AND u.id_empresa = :id_empresa
     `;
-
-    // Ejecutar la consulta
+ 
     const result = await sequelize.query(query, {
       replacements: { id_empresa },
       type: sequelize.QueryTypes.SELECT
@@ -476,7 +473,6 @@ exports.delete = async (req, res) => {
 
     const { total_tareas_completadas } = result[0]; 
 
-    // Enviar la respuesta al cliente
     return res.status(200).json({
       success: true,
       total_tareas_completadas
