@@ -16,6 +16,14 @@ const User = sequelize.define('User', {
     allowNull: false,
     unique: true,
   },
+  id_empresa: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'empresas',
+      key: 'id',
+    },
+  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: false,

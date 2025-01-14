@@ -30,6 +30,21 @@ const Message = sequelize.define('Message', {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  sentimientos: {
+    type: DataTypes.TEXT
+  },
+  factor_psicosocial: {
+    type: DataTypes.TEXT
+  },
+  score: {
+    type: DataTypes.INTEGER
+  },
+  keyword_frequency: {
+    type: DataTypes.JSON,
+  },
+  message_length: {
+    type: DataTypes.INTEGER,
+  }
 }, {
   timestamps: false,
   tableName: 'messages', // Nombre explícito de la tabla en la base de datos
