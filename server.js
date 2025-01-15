@@ -9,6 +9,7 @@ const activityRouter = require('./routes/activity');
 const sequelize = require('./config/database');
 const maintanceRouter = require('./routes/maintance');
 const userResponseRoutes = require('./routes/userResponseRoutes');
+const empresaRoutes = require('./routes/empresa');
 const testEstresRoutes = require('./routes/TestEstresRoutes');
 const estresNiveles = require('./routes/estresniveles');
 const userEstresSession = require('./routes/userestressesion');
@@ -35,6 +36,7 @@ app.use(bodyParser.json());
 // Configuración de rutas
 app.use('/api', messagesRouter);
 app.use('/api', usersRouter);
+app.use('/api', empresaRoutes);
 app.use('/api', openaiRouter);
 app.use('/api', activityRouter);
 app.use('/api/v1/maintance', maintanceRouter);
