@@ -406,7 +406,6 @@ exports.delete = async (req, res) => {
     res.status(500).json({ error: "Error al eliminar el programa de usuario" });
   }
 };
-<<<<<<< HEAD
 
 //cantidad de tareas que comnpletaron los empleados de la empresa
 //falta probar
@@ -444,5 +443,3 @@ exports.delete = async (req, res) => {
 }*/
 
 //exports.taskCompleted = taskCompleted;
-=======
->>>>>>> main
