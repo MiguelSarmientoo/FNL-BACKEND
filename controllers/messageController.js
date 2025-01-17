@@ -1,5 +1,5 @@
 const { Message } = require('../models');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const moment = require('moment-timezone');
 
 const timeZone = 'America/Lima'; // Zona horaria de Perú
@@ -83,10 +83,37 @@ const getAllMessages = async (req, res) => {
     res.status(500).json({ error: 'Error fetching messages' });
   }
 }
+const promedioScore = async (req, res) => {
+  try {
+    const { userId } = req.params; 
+    const promedioSemana = await Message.findAll({
+      attributes: [
+        [Sequelize.fn('YEARWEEK', Sequelize.col('created_at')), 'week'],
+        [Sequelize.fn('AVG', Sequelize.col('score')), 'promedio_estres']
+      ],
+      where: {
+        user_id: userId, 
+      },
+      group: ['week'], 
+      order: [['week', 'ASC']], 
+    });
+
+    const result = promedioSemana.map(entry => ({
+      semana: entry.dataValues.week,
+      promedio_estres: parseFloat(entry.dataValues.promedio_estres)
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error al calcular el promedio semanal:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
 
 module.exports = {
   saveMessage,
   getAllMessages,
   getFilteredMessages,
-  saveMessageFromBot
+  saveMessageFromBot,
+  promedioScore
 };
