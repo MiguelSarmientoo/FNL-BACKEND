@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Role = require('../models/roles'); 
 
 const User = sequelize.define('User', {
   username: {
@@ -18,9 +19,17 @@ const User = sequelize.define('User', {
   },
   id_empresa: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'empresas',
+      key: 'id',
+    },
+  },
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'roles',
       key: 'id',
     },
   },
@@ -35,31 +44,30 @@ const User = sequelize.define('User', {
     defaultValue: false,
   },
   funcyinteract: { 
-    type: DataTypes.INTEGER, // Si es un entero, usa valores numéricos como 0 (false) o 1 (true)
+    type: DataTypes.INTEGER,
     allowNull: true,
-    defaultValue: 0, // Usar un valor numérico en lugar de false
+    defaultValue: 0,
   },
   profileImage: {
     type: DataTypes.STRING,
     allowNull: true,
   },
   userresponsebool: { 
-    type: DataTypes.BOOLEAN, // Sequelize lo mapea a TINYINT(1) en MySQL
+    type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
   },
   testestresbool: { 
-    type: DataTypes.BOOLEAN, // Sequelize lo mapea a TINYINT(1) en MySQL
+    type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
-  },
-  id_empresa: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
   },
 }, {
   timestamps: false,
   tableName: 'users',
 });
+
+User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' });
+Role.hasMany(User, { foreignKey: 'role_id' });
 
 module.exports = User;

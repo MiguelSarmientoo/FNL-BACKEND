@@ -6,6 +6,7 @@ const fs = require('fs');
 const sequelize = require('../config/database');
 const Empresa = require('../models/empresa');
 const { Op } = require('sequelize');
+
 // Login de usuario y generación de token
 async function login(req, res) {
   const { username, password } = req.body;
@@ -48,7 +49,7 @@ async function login(req, res) {
 }
 
 async function createUser(req, res) {
-  const { username, password, email, id_empresa } = req.body;
+  const { username, password, email, id_empresa, role_id } = req.body;
   const file = req.file; // Ahora usamos req.file, ya que es un solo archivo
 
   try {
@@ -81,6 +82,7 @@ async function createUser(req, res) {
       id_empresa,
       profileImage: profileImagePath,
       created_at: new Date(),
+      role: role || 'user', 
     });
 
     res
@@ -309,7 +311,8 @@ async function updateUser(req, res) {
       profileImage,
       testestresbool,
       userresponsebool,
-      id_empresa
+      id_empresa,
+      role_id
     }, {
       where: { id }
     });
