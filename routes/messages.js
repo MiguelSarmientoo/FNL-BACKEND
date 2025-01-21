@@ -6,5 +6,6 @@ router.get('/messages', messageController.getAllMessages);
 router.get('/messages/filtered', messageController.getFilteredMessages);
 router.post('/guardarMensaje', messageController.saveMessage);
 router.post('/guardarMensajeFromBot', messageController.saveMessageFromBot);
+router.get('/promedioScore/:userId', messageController.promedioScore);
 
 module.exports = router;
